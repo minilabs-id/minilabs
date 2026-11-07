@@ -114,12 +114,12 @@ a {
 
 .logo {
   width: auto;
-  height: 24px;
+  height: 44px;
 }
 
 @media (min-width: 640px) {
   .logo {
-    height: 28px;
+    height: 58px;
   }
 }
 
