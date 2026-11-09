@@ -1,0 +1,12 @@
+{
+  "name": "minilabs",
+  "version": "0.1.0",
+  "description": "MiniLabs — portfolio hub untuk proyek-proyek MiniLabs (minicode, minibug, minibot, miniword).",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build.ts",
+    "dev": "bun generate.ts && bun --hot server.ts",
+    "check": "bun check.ts"
+  }
+}

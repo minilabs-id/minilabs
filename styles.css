@@ -1,6 +1,6 @@
 /* ==========================================================================
-   MiniLabs — Beta Landing Page
-   Future-oriented Technocraft · monochrome foundation · editorial layout
+   MiniLabs — monochrome editorial (ink on paper)
+   Bahasa desain mengikuti karakter logo: mark hitam pekat, geometris, minimal.
    ========================================================================== */
 
 :root {
@@ -10,7 +10,6 @@
   --ink-soft: #2e2e2e;
   --muted: #76766f;
   --line: #e5e3dc;
-  --accent: #f03d0b;
 
   --font-display: "Space Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
@@ -22,7 +21,6 @@
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Reset ---------------------------------------------------------------- */
 *,
 *::before,
 *::after {
@@ -63,15 +61,13 @@ a {
   color: var(--bg);
 }
 
-/* Layout shell --------------------------------------------------------- */
 .page {
   min-height: 100vh;
-  overflow: clip; /* prevents accidental horizontal scroll */
+  overflow: clip;
   display: flex;
   flex-direction: column;
 }
 
-/* Accessibility */
 .skip-link {
   position: absolute;
   left: -9999px;
@@ -91,7 +87,7 @@ a {
   top: 0;
 }
 
-/* Header --------------------------------------------------------------- */
+/* Header ---------------------------------------------------------------- */
 .site-header {
   position: sticky;
   top: 0;
@@ -99,8 +95,8 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
   padding: 1.1rem var(--pad);
-  background: var(--bg);
   background: color-mix(in srgb, var(--bg) 82%, transparent);
   -webkit-backdrop-filter: saturate(140%) blur(10px);
   backdrop-filter: saturate(140%) blur(10px);
@@ -123,28 +119,22 @@ a {
   }
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55em;
+.nav {
+  display: flex;
+  gap: 1.75rem;
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--ink-soft);
-  white-space: nowrap;
+  color: var(--muted);
 }
 
-.badge::before {
-  content: "";
-  width: 7px;
-  height: 7px;
-  background: var(--accent);
-  flex: none;
+.nav a:hover {
+  color: var(--ink);
 }
 
-/* Hero ----------------------------------------------------------------- */
+/* Hero ------------------------------------------------------------------ */
 .hero {
   display: flex;
   flex-direction: column;
@@ -164,7 +154,7 @@ a {
 }
 
 .hero-sub {
-  max-width: 30ch;
+  max-width: 34ch;
   font-size: clamp(1.125rem, 2.4vw, 1.5rem);
   font-weight: 500;
   line-height: 1.45;
@@ -172,7 +162,7 @@ a {
   color: var(--ink-soft);
 }
 
-/* Sections (shared editorial framework) -------------------------------- */
+/* Sections (editorial framework) ---------------------------------------- */
 .section {
   display: grid;
   grid-template-columns: 1fr;
@@ -195,7 +185,7 @@ a {
   font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.12em;
-  color: var(--accent);
+  color: var(--ink);
 }
 
 .section__label {
@@ -222,7 +212,7 @@ a {
   }
 }
 
-/* Editorial body ------------------------------------------------------- */
+/* Editorial body ---------------------------------------------------------- */
 .editorial {
   display: flex;
   flex-direction: column;
@@ -238,43 +228,178 @@ a {
   text-wrap: pretty;
 }
 
-.vision {
-  max-width: 30em;
-  font-size: clamp(1.5rem, 4.2vw, 2.75rem);
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  line-height: 1.22;
-  text-wrap: pretty;
+/* Projects grid ------------------------------------------------------------ */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
 }
 
-/* Current project ------------------------------------------------------- */
-.eyebrow {
+@media (min-width: 720px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.75rem;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  transition: border-color 0.15s var(--ease), transform 0.15s var(--ease);
+}
+
+.card:hover {
+  border-color: var(--ink);
+  transform: translateY(-2px);
+}
+
+.card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.card__name {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.card__tagline {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+/* Status badge (monokrom) -------------------------------------------------- */
+.status {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   font-weight: 500;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.status--live {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.status--beta {
+  border-style: dashed;
+  color: var(--ink-soft);
+}
+
+.status--planned {
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+/* Project detail ------------------------------------------------------------ */
+.project {
+  max-width: var(--maxw);
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(64px, 12vh, 120px) var(--pad) var(--section-gap);
+}
+
+.back {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 1.75rem;
+  margin-bottom: 3rem;
 }
 
-.project-name {
-  font-size: clamp(3.5rem, 11vw, 9rem);
+.back:hover {
+  color: var(--ink);
+}
+
+.project__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.project__name {
+  font-size: clamp(3rem, 9vw, 7rem);
   font-weight: 600;
   letter-spacing: -0.04em;
-  line-height: 0.92;
-  margin-bottom: 1.75rem;
+  line-height: 0.95;
 }
 
-.project-sub {
-  max-width: 30ch;
-  font-size: clamp(1.125rem, 2.4vw, 1.5rem);
+.project__tagline {
+  max-width: 46ch;
+  font-size: clamp(1.25rem, 2.6vw, 1.75rem);
   font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.35;
   color: var(--ink-soft);
-  letter-spacing: -0.01em;
+  margin: 2rem 0 3rem;
 }
 
-/* Footer --------------------------------------------------------------- */
+.project__overview {
+  max-width: 60ch;
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--ink-soft);
+}
+
+.highlights {
+  list-style: none;
+  margin: 2.5rem 0 0;
+  max-width: 60ch;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.highlights li {
+  position: relative;
+  padding-left: 1.25rem;
+  font-size: 0.9375rem;
+  color: var(--ink-soft);
+}
+
+.highlights li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 6px;
+  height: 6px;
+  background: var(--ink);
+}
+
+.project__repo {
+  margin-top: 2.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+.project__repo a {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.1rem;
+}
+
+.project__repo a:hover {
+  border-color: var(--ink);
+}
+
+/* Footer ------------------------------------------------------------------- */
 .site-footer {
   display: flex;
   flex-direction: column;
@@ -300,7 +425,7 @@ a {
   font-weight: 500;
 }
 
-/* Reveal motion -------------------------------------------------------- */
+/* Reveal motion -------------------------------------------------------------- */
 [data-reveal] {
   opacity: 0;
   transform: translateY(18px);
@@ -313,7 +438,6 @@ a {
   transform: none;
 }
 
-/* Respect reduced motion ---------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
