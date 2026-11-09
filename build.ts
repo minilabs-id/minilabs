@@ -104,13 +104,18 @@ const cards = PROJECTS.map(
 
 const hub = layout({
   title: "MiniLabs — Exploring ideas. Engineering possibilities.",
-  desc: "MiniLabs adalah studio untuk mengeksplorasi kemungkinan dan membangun produk teknologi: MiniCode, MiniBug, MiniBot, MiniWord.",
+  desc: "MiniLabs adalah studio independen yang membangun alat open source yang fokus — MiniCode (coding agent), MiniBug, MiniBot, MiniWord.",
   canon: `${base}/`,
   ogTitle: "MiniLabs — Ideas are meant to be built.",
   body: `
   <section class="hero" id="top">
+    <p class="hero__kicker" data-reveal>Independent studio · open source</p>
     <h1 class="hero-title">Ideas are meant<br />to be built.</h1>
-    <p class="hero-sub" data-reveal>Studio untuk mengeksplorasi kemungkinan, meracik ide, dan membangun produk teknologi.</p>
+    <p class="hero-sub" data-reveal>Studio independen yang membangun alat open source yang fokus — dari coding agent hingga CMS.</p>
+    <div class="hero__cta" data-reveal>
+      <a class="btn" href="/projects/minicode/">Jelajahi MiniCode →</a>
+      <a class="btn btn--ghost" href="#proyek">Semua proyek</a>
+    </div>
   </section>
   <section class="section" id="proyek" aria-label="Proyek">
     <div class="section__aside">
