@@ -239,6 +239,21 @@ write(
   `User-agent: *\nAllow: /\n\nSitemap: ${base}/sitemap.xml\n`,
 )
 
+// llms.txt — indeks untuk AI/agent yang browsing (konvensi llmstxt.org).
+write(
+  "llms.txt",
+  [
+    "# MiniLabs",
+    "",
+    "> Studio untuk mengeksplorasi kemungkinan dan membangun produk teknologi.",
+    "",
+    "## Proyek",
+    ...PROJECTS.map((p) => `- [${p.name}](${base}/projects/${p.slug}/): ${p.tagline}`),
+    ...docUrls.map((u) => `- [Dokumentasi](${u})`),
+    "",
+  ].join("\n"),
+)
+
 // ── aset statis ─────────────────────────────────────────────────────────
 for (const f of ["styles.css", "app.js", "logo.svg", "CNAME"]) {
   cpSync(join(root, f), join(site, f))
