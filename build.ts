@@ -2,7 +2,7 @@
 // Zero-dependency (node:fs/path). Baca projects.ts → generate site/.
 import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { PROJECTS } from "./projects.ts"
+import { PROJECTS, type Project } from "./projects.ts"
 import { type DocPage, fetchProjectDocs } from "./docs.ts"
 
 const root = import.meta.dir
@@ -136,11 +136,69 @@ const hub = layout({
 write("index.html", hub)
 
 // ── Halaman detail per proyek ───────────────────────────────────────────
-for (const p of PROJECTS) {
-  const highlights =
-    p.highlights && p.highlights.length
-      ? `<ul class="highlights">${p.highlights.map((h) => `<li>${h}</li>`).join("\n")}</ul>`
-      : ""
+// Detail = hero (nama + status + tagline) → lede (overview) → seksi-seksi
+// bernomor (instalasi / status, kemampuan/rencana, sumber & dokumentasi).
+function detailSections(p: Project): string {
+  const sections: Array<{ id: string; title: string; body: string }> = []
+
+  if (p.install && p.install.length) {
+    const steps = p.install
+      .map(
+        (s) => `
+        <li class="step">
+          <span class="step__label">${s.label}</span>
+          ${s.command ? `<pre class="step__code"><code>${s.command}</code></pre>` : ""}
+        </li>`,
+      )
+      .join("")
+    const note = p.installNote ? `<p class="step__note">${p.installNote}</p>` : ""
+    sections.push({
+      id: "instalasi",
+      title: "Instalasi",
+      body: `<p class="pblock__intro">Dari nol ke prompt pertama dalam beberapa langkah.</p><ol class="steps">${steps}</ol>${note}`,
+    })
+  } else if (p.plannedNote) {
+    sections.push({
+      id: "status",
+      title: "Status",
+      body: `<p class="planned-note">${p.plannedNote}</p>`,
+    })
+  }
+
+  if (p.highlights && p.highlights.length) {
+    const live = p.status === "live"
+    sections.push({
+      id: live ? "kemampuan" : "rencana",
+      title: live ? "Kemampuan" : "Rencana",
+      body: `<ul class="highlights">${p.highlights.map((h) => `<li>${h}</li>`).join("")}</ul>`,
+    })
+  }
+
+  if (p.repo) {
+    sections.push({
+      id: "sumber",
+      title: "Sumber & dokumentasi",
+      body: `<p class="pblock__intro">Kode, rilis, dan manual lengkap satu klik dari sini.</p>
+        <p class="project__links">
+          <a class="btn" href="https://github.com/${p.repo}" rel="noopener">GitHub ↗</a>
+          <a class="btn btn--ghost" href="/projects/${p.slug}/docs/">Dokumentasi →</a>
+        </p>`,
+    })
+  }
+
+  return sections
+    .map(
+      (s, i) => `
+    <section class="pblock" id="${s.id}">
+      <h2 class="pblock__title"><span class="pblock__index">${String(i + 1).padStart(2, "0")}</span>${s.title}</h2>
+      ${s.body}
+    </section>`,
+    )
+    .join("")
+}
+
+for (const [index, p] of PROJECTS.entries()) {
+  const num = String(index + 1).padStart(2, "0")
   const detail = layout({
     title: `${p.name} — MiniLabs`,
     desc: p.tagline,
@@ -149,16 +207,18 @@ for (const p of PROJECTS) {
     body: `
     <article class="project">
       <a class="back" href="/">← MiniLabs</a>
-      <header class="project__head">
-        <h1 class="project__name">${p.name}</h1>
-        <span class="status status--${p.status}">${statusLabel[p.status]}</span>
+      <header class="project__hero">
+        <span class="project__eyebrow">Proyek ${num}</span>
+        <div class="project__title-row">
+          <h1 class="project__name">${p.name}</h1>
+          <span class="status status--${p.status}">${statusLabel[p.status]}</span>
+        </div>
+        <p class="project__tagline">${p.tagline}</p>
       </header>
-      <p class="project__tagline">${p.tagline}</p>
-      <div class="project__overview">
+      <div class="project__lede" data-reveal>
         <p>${p.overview}</p>
       </div>
-      ${highlights}
-      ${p.repo ? `<p class="project__repo"><a href="https://github.com/${p.repo}" rel="noopener">github.com/${p.repo}</a> · <a href="/projects/${p.slug}/docs/">Dokumentasi</a></p>` : ""}
+      ${detailSections(p)}
     </article>`,
   })
   write(`projects/${p.slug}/index.html`, detail)

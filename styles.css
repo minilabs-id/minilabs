@@ -309,7 +309,7 @@ a {
   max-width: var(--maxw);
   width: 100%;
   margin: 0 auto;
-  padding: clamp(64px, 12vh, 120px) var(--pad) var(--section-gap);
+  padding: clamp(56px, 10vh, 104px) var(--pad) var(--section-gap);
 }
 
 .back {
@@ -319,18 +319,34 @@ a {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 3rem;
+  margin-bottom: clamp(2.5rem, 6vh, 4rem);
 }
 
 .back:hover {
   color: var(--ink);
 }
 
-.project__head {
+/* Hero proyek ------------------------------------------------------------- */
+.project__hero {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.project__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.project__title-row {
+  display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 1.5rem;
   flex-wrap: wrap;
 }
 
@@ -338,7 +354,12 @@ a {
   font-size: clamp(3rem, 9vw, 7rem);
   font-weight: 600;
   letter-spacing: -0.04em;
-  line-height: 0.95;
+  line-height: 0.92;
+  margin: 0;
+}
+
+.project__title-row .status {
+  margin-top: clamp(0.75rem, 2vw, 1.5rem);
 }
 
 .project__tagline {
@@ -348,29 +369,149 @@ a {
   letter-spacing: -0.015em;
   line-height: 1.35;
   color: var(--ink-soft);
-  margin: 2rem 0 3rem;
+  margin: 0;
 }
 
-.project__overview {
+/* Lede (paragraf pembuka) -------------------------------------------------- */
+.project__lede {
   max-width: 60ch;
-  font-size: 1.0625rem;
-  line-height: 1.7;
+  margin-top: clamp(2.5rem, 5vh, 4rem);
+  font-size: clamp(1.125rem, 2vw, 1.375rem);
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
   color: var(--ink-soft);
 }
 
-.highlights {
+/* Blok seksi proyek -------------------------------------------------------- */
+.pblock {
+  margin-top: clamp(4rem, 8vh, 6rem);
+  padding-top: clamp(2.25rem, 5vh, 3rem);
+  border-top: 1px solid var(--line);
+  max-width: 720px;
+}
+
+.pblock__title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+  font-size: clamp(1.5rem, 3.4vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  margin: 0 0 1.75rem;
+}
+
+.pblock__index {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  transform: translateY(-0.4em);
+}
+
+.pblock__intro {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+  max-width: 52ch;
+}
+
+/* Langkah instalasi -------------------------------------------------------- */
+.steps {
   list-style: none;
-  margin: 2.5rem 0 0;
-  max-width: 60ch;
+  counter-reset: step;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+}
+
+.step {
+  counter-increment: step;
+  position: relative;
+  padding: 1.25rem 0 1.25rem 2.75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.step:first-child {
+  padding-top: 0;
+}
+
+.step:last-child {
+  border-bottom: none;
+}
+
+.step::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 1.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.step:first-child::before {
+  top: 0.15rem;
+}
+
+.step__label {
+  display: block;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin-bottom: 0.65rem;
+}
+
+.step__code {
+  background: var(--ink);
+  color: var(--bg);
+  padding: 0.85rem 1.1rem;
+  border-radius: 2px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+.step__code code {
+  font-family: inherit;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.step__note {
+  margin-top: 1.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 56ch;
+}
+
+/* Catatan status planned --------------------------------------------------- */
+.planned-note {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  max-width: 56ch;
+}
+
+/* Daftar fitur (highlights) ------------------------------------------------ */
+.highlights {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  max-width: 56ch;
 }
 
 .highlights li {
   position: relative;
   padding-left: 1.25rem;
   font-size: 0.9375rem;
+  line-height: 1.55;
   color: var(--ink-soft);
 }
 
@@ -378,25 +519,49 @@ a {
   content: "";
   position: absolute;
   left: 0;
-  top: 0.5em;
+  top: 0.55em;
   width: 6px;
   height: 6px;
   background: var(--ink);
 }
 
-.project__repo {
-  margin-top: 2.5rem;
+/* CTA: GitHub + Dokumentasi ------------------------------------------------ */
+.project__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.8rem 1.4rem;
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  background: var(--ink);
+  color: var(--bg);
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
 }
 
-.project__repo a {
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 0.1rem;
+.btn:hover {
+  background: transparent;
+  color: var(--ink);
 }
 
-.project__repo a:hover {
-  border-color: var(--ink);
+.btn--ghost {
+  background: transparent;
+  color: var(--ink);
+}
+
+.btn--ghost:hover {
+  background: var(--ink);
+  color: var(--bg);
 }
 
 /* Docs (halaman dokumentasi per proyek) ------------------------------------- */
