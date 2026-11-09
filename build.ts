@@ -88,6 +88,9 @@ const statusLabel: Record<string, string> = {
 }
 
 // ── Hub ─────────────────────────────────────────────────────────────────
+const liveCount = PROJECTS.filter((p) => p.status === "live").length
+const plannedCount = PROJECTS.length - liveCount
+
 const cards = PROJECTS.map(
   (p) => `
   <a class="card" href="/projects/${p.slug}/">
@@ -127,9 +130,19 @@ const hub = layout({
     <div class="section__body">
       <h2 class="section__title">Tentang MiniLabs</h2>
       <div class="editorial" data-reveal>
-        <p>MiniLabs adalah ruang untuk mengeksplorasi kemungkinan, meracik ide, bereksperimen dengan teknologi, dan membangun sesuatu yang sebelumnya hanya ada dalam pikiran.</p>
-        <p>Dari coding agent hingga alat bug bounty — setiap proyek lahir di sini, dengan dokumentasi yang ikut ter-update setiap kali kodenya berubah.</p>
+        <p>MiniLabs adalah studio open source yang membangun alat kecil yang fokus dan bisa diaudit — satu ide, satu proyek, tanpa menggembungkan fitur. Semua berbagi fondasi yang sama: kernel MiniCore.</p>
+        <p>Coding agent, bug bounty, sampai CMS — yang menyatukannya bukan kategori, melainkan pendekatan: dependency seminim mungkin, dokumentasi yang jujur, dan antarmuka yang mereda.</p>
       </div>
+      <ol class="principles" data-reveal>
+        <li><strong>Zero-dependency</strong> — tanpa runtime pihak ketiga; permukaan audit kecil, install cepat.</li>
+        <li><strong>Jujur &amp; terukur</strong> — batas dan kegagalan dilaporkan apa adanya, bukan klaim.</li>
+        <li><strong>Dokumentasi hidup</strong> — manual ditulis di repo, dirender otomatis di sini saat kode berubah.</li>
+        <li><strong>Minimalis monokrom</strong> — hitam di atas krem; desain yang mereda agar karyanya yang bicara.</li>
+      </ol>
+      <p class="about__meta">${PROJECTS.length} proyek — ${liveCount} aktif, ${plannedCount} dalam perencanaan.</p>
+      <p class="about__cta">
+        <a class="btn" href="https://github.com/startupmini" rel="noopener">GitHub ↗</a>
+      </p>
     </div>
   </section>`,
 })
