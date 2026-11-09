@@ -134,6 +134,33 @@ a {
   color: var(--ink);
 }
 
+/* Language switcher (ID / EN) -------------------------------------------- */
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-left: 0.9rem;
+  border-left: 1px solid var(--line);
+}
+
+.lang {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  padding: 0.1rem 0;
+  border-bottom: 1px solid transparent;
+}
+
+.lang:hover {
+  color: var(--ink);
+}
+
+.lang.is-active {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
 /* Hero ------------------------------------------------------------------ */
 .hero {
   display: flex;

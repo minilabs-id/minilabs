@@ -1,13 +1,23 @@
-// MiniLabs — SSG minim: hub + halaman detail proyek + sitemap + robots.
-// Zero-dependency (node:fs/path). Baca projects.ts → generate site/.
+// MiniLabs — SSG minim: hub + halaman detail proyek + dokumen, bilingual (id/en).
+// Zero-dependency (node:fs/path). Baca projects.ts + copy.ts → generate site/.
+// Konten proyek (docs) = single source bahasa sumber (Indonesia), dirender sekali
+// di namespace id; chrome situs (hub + halaman proyek) dibuat untuk id dan en.
 import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { PROJECTS, type Project } from "./projects.ts"
 import { type DocPage, fetchProjectDocs } from "./docs.ts"
+import { CHROME, LANGS, type Lang } from "./copy.ts"
 
 const root = import.meta.dir
 const site = join(root, "site")
 const base = "https://minilabs.id"
+
+// Identitas brand (Bahasa Inggris, sama di semua locale).
+const HERO_KICKER = "Independent studio · open source"
+const HERO_TITLE = `Ideas are meant<br />to be built.`
+const FOOTER_TAGLINE = "Exploring ideas. Engineering possibilities."
+const statusLabel = { live: "Live", beta: "Beta", planned: "Planned" } as const
+const ORG = "https://github.com/startupmini"
 
 rmSync(site, { recursive: true, force: true })
 mkdirSync(site, { recursive: true })
@@ -18,31 +28,47 @@ function write(rel: string, content: string): void {
   writeFileSync(dest, content, "utf8")
 }
 
+const prefix = (l: Lang): string => (l === "en" ? "en/" : "")
+const href = (l: Lang, rel: string): string => `/${prefix(l)}${rel}`
+const homeUrl = (l: Lang): string => `/${prefix(l)}`
+
 // ── Chrome halaman ──────────────────────────────────────────────────────
 function layout(opts: {
+  lang: Lang
+  rel: string
   title: string
   desc: string
-  canon: string
-  ogTitle: string
   body: string
+  /** true → tampilkan switcher bahasa + hreflang alternates (halaman situs). */
+  isSite?: boolean
 }): string {
+  const { lang, rel, title, desc, body, isSite = false } = opts
+  const canon = `${base}${href(lang, rel)}`
+  const alts = isSite
+    ? LANGS.map(
+        (L) =>
+          `<link rel="alternate" hreflang="${L.code}" href="${base}${href(L.code, rel)}" />`,
+      ).join("\n") + `\n<link rel="alternate" hreflang="x-default" href="${base}${href("id", rel)}" />`
+    : ""
+  const htmlLang = LANGS.find((L) => L.code === lang)?.htmlLang ?? "id"
   return `<!DOCTYPE html>
-<html lang="id">
+<html lang="${htmlLang}">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>${opts.title}</title>
-<meta name="description" content="${opts.desc}" />
-<link rel="canonical" href="${opts.canon}" />
+<title>${title}</title>
+<meta name="description" content="${desc}" />
+<link rel="canonical" href="${canon}" />
+${alts}
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="MiniLabs" />
-<meta property="og:title" content="${opts.ogTitle}" />
-<meta property="og:description" content="${opts.desc}" />
-<meta property="og:url" content="${opts.canon}" />
+<meta property="og:title" content="${title}" />
+<meta property="og:description" content="${desc}" />
+<meta property="og:url" content="${canon}" />
 <meta property="og:image" content="${base}/logo.svg" />
 <meta name="twitter:card" content="summary" />
-<meta name="twitter:title" content="${opts.ogTitle}" />
-<meta name="twitter:description" content="${opts.desc}" />
+<meta name="twitter:title" content="${title}" />
+<meta name="twitter:description" content="${desc}" />
 <meta name="theme-color" content="#f6f5f0" />
 <link rel="icon" type="image/svg+xml" href="/logo.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -51,10 +77,10 @@ function layout(opts: {
 <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-<a class="skip-link" href="#main">Lewati ke konten</a>
+<a class="skip-link" href="#main">${lang === "en" ? "Skip to content" : "Lewati ke konten"}</a>
 <div class="page">
-${header()}
-<main id="main">${opts.body}</main>
+${header(lang, rel, isSite)}
+<main id="main">${body}</main>
 ${footer()}
 </div>
 <script src="/app.js" defer></script>
@@ -62,105 +88,43 @@ ${footer()}
 </html>`
 }
 
-function header(withNav = true): string {
+function header(lang: Lang, rel: string, showLang: boolean): string {
+  const t = CHROME[lang]
+  const switcher = showLang
+    ? `<span class="lang-switch" aria-label="Language">
+        ${LANGS.map((L) => {
+          const active = L.code === lang ? " is-active" : ""
+          return `<a class="lang${active}" href="${href(L.code, rel)}" hreflang="${L.code}">${L.label}</a>`
+        }).join("")}
+      </span>`
+    : ""
   return `<header class="site-header">
-  <a class="brand" href="/" aria-label="MiniLabs — beranda">
+  <a class="brand" href="${homeUrl(lang)}" aria-label="MiniLabs — beranda">
     <img src="/logo.svg" alt="MiniLabs" class="logo" width="1536" height="1024" />
   </a>
-  ${withNav ? `<nav class="nav" aria-label="Navigasi utama">
-    <a href="/#proyek">Proyek</a>
-    <a href="/#tentang">Tentang</a>
-  </nav>` : ""}
+  <nav class="nav" aria-label="Navigasi utama">
+    <a href="${homeUrl(lang)}#proyek">${t.navProjects}</a>
+    <a href="${homeUrl(lang)}#tentang">${t.navAbout}</a>
+    ${switcher}
+  </nav>
 </header>`
 }
 
 function footer(): string {
   return `<footer class="site-footer">
   <span class="footer__brand">MINILABS&nbsp;©&nbsp;2026</span>
-  <span class="footer__tagline">Exploring ideas. Engineering possibilities.</span>
+  <span class="footer__tagline">${FOOTER_TAGLINE}</span>
 </footer>`
 }
 
-const statusLabel: Record<string, string> = {
-  live: "Live",
-  beta: "Beta",
-  planned: "Planned",
-}
-
-// ── Hub ─────────────────────────────────────────────────────────────────
-const liveCount = PROJECTS.filter((p) => p.status === "live").length
-const plannedCount = PROJECTS.length - liveCount
-
-const cards = PROJECTS.map(
-  (p) => `
-  <a class="card" href="/projects/${p.slug}/">
-    <div class="card__head">
-      <span class="card__name">${p.name}</span>
-      <span class="status status--${p.status}">${statusLabel[p.status]}</span>
-    </div>
-    <p class="card__tagline">${p.tagline}</p>
-  </a>`,
-).join("\n")
-
-const hub = layout({
-  title: "MiniLabs — Exploring ideas. Engineering possibilities.",
-  desc: "MiniLabs adalah studio independen yang membangun alat open source yang fokus — MiniCode (coding agent), MiniBug, MiniBot, MiniWord.",
-  canon: `${base}/`,
-  ogTitle: "MiniLabs — Ideas are meant to be built.",
-  body: `
-  <section class="hero" id="top">
-    <p class="hero__kicker" data-reveal>Independent studio · open source</p>
-    <h1 class="hero-title">Ideas are meant<br />to be built.</h1>
-    <p class="hero-sub" data-reveal>Studio independen yang membangun alat open source yang fokus — dari coding agent hingga CMS.</p>
-    <div class="hero__cta" data-reveal>
-      <a class="btn" href="/projects/minicode/">Jelajahi MiniCode →</a>
-      <a class="btn btn--ghost" href="#proyek">Semua proyek</a>
-    </div>
-  </section>
-  <section class="section" id="proyek" aria-label="Proyek">
-    <div class="section__aside">
-      <span class="section__index">01</span>
-      <span class="section__label">Proyek</span>
-    </div>
-    <div class="section__body">
-      <h2 class="section__title">Dibangun di sini.</h2>
-      <div class="grid">${cards}</div>
-    </div>
-  </section>
-  <section class="section" id="tentang" aria-label="Tentang">
-    <div class="section__aside">
-      <span class="section__index">02</span>
-      <span class="section__label">Tentang</span>
-    </div>
-    <div class="section__body">
-      <h2 class="section__title">Tentang MiniLabs</h2>
-      <div class="editorial" data-reveal>
-        <p>MiniLabs adalah studio open source yang membangun alat kecil yang fokus dan bisa diaudit — satu ide, satu proyek, tanpa menggembungkan fitur. Semua berbagi fondasi yang sama: kernel MiniCore.</p>
-        <p>Coding agent, bug bounty, sampai CMS — yang menyatukannya bukan kategori, melainkan pendekatan: dependency seminim mungkin, dokumentasi yang jujur, dan antarmuka yang mereda.</p>
-      </div>
-      <ol class="principles" data-reveal>
-        <li><strong>Zero-dependency</strong> — tanpa runtime pihak ketiga; permukaan audit kecil, install cepat.</li>
-        <li><strong>Jujur &amp; terukur</strong> — batas dan kegagalan dilaporkan apa adanya, bukan klaim.</li>
-        <li><strong>Dokumentasi hidup</strong> — manual ditulis di repo, dirender otomatis di sini saat kode berubah.</li>
-        <li><strong>Minimalis monokrom</strong> — hitam di atas krem; desain yang mereda agar karyanya yang bicara.</li>
-      </ol>
-      <p class="about__meta">${PROJECTS.length} proyek — ${liveCount} aktif, ${plannedCount} dalam perencanaan.</p>
-      <p class="about__cta">
-        <a class="btn" href="https://github.com/startupmini" rel="noopener">GitHub ↗</a>
-      </p>
-    </div>
-  </section>`,
-})
-write("index.html", hub)
-
-// ── Halaman detail per proyek ───────────────────────────────────────────
-// Detail = hero (nama + status + tagline) → lede (overview) → seksi-seksi
-// bernomor (instalasi / status, kemampuan/rencana, sumber & dokumentasi).
-function detailSections(p: Project): string {
+// ── Seksi halaman detail ────────────────────────────────────────────────
+function detailSections(p: Project, lang: Lang): string {
+  const t = CHROME[lang]
+  const c = p.content[lang]
   const sections: Array<{ id: string; title: string; body: string }> = []
 
-  if (p.install && p.install.length) {
-    const steps = p.install
+  if (c.install && c.install.length) {
+    const steps = c.install
       .map(
         (s) => `
         <li class="step">
@@ -169,37 +133,38 @@ function detailSections(p: Project): string {
         </li>`,
       )
       .join("")
-    const note = p.installNote ? `<p class="step__note">${p.installNote}</p>` : ""
+    const note = c.installNote ? `<p class="step__note">${c.installNote}</p>` : ""
     sections.push({
       id: "instalasi",
-      title: "Instalasi",
-      body: `<p class="pblock__intro">Dari nol ke prompt pertama dalam beberapa langkah.</p><ol class="steps">${steps}</ol>${note}`,
+      title: t.installTitle,
+      body: `<p class="pblock__intro">${t.installIntro}</p><ol class="steps">${steps}</ol>${note}`,
     })
-  } else if (p.plannedNote) {
+  } else if (c.plannedNote) {
     sections.push({
       id: "status",
-      title: "Status",
-      body: `<p class="planned-note">${p.plannedNote}</p>`,
+      title: t.statusTitle,
+      body: `<p class="planned-note">${c.plannedNote}</p>`,
     })
   }
 
-  if (p.highlights && p.highlights.length) {
-    const live = p.status === "live"
+  if (c.highlights && c.highlights.length) {
+    const isLive = p.status === "live"
     sections.push({
-      id: live ? "kemampuan" : "rencana",
-      title: live ? "Kemampuan" : "Rencana",
-      body: `<ul class="highlights">${p.highlights.map((h) => `<li>${h}</li>`).join("")}</ul>`,
+      id: isLive ? "kemampuan" : "rencana",
+      title: isLive ? t.capabilitiesTitle : t.roadmapTitle,
+      body: `<ul class="highlights">${c.highlights.map((h) => `<li>${h}</li>`).join("")}</ul>`,
     })
   }
 
   if (p.repo) {
+    const docsHref = `${href("id", `projects/${p.slug}/docs/`)}` // docs = single source (id)
     sections.push({
       id: "sumber",
-      title: "Sumber & dokumentasi",
-      body: `<p class="pblock__intro">Kode, rilis, dan manual lengkap satu klik dari sini.</p>
+      title: t.sourceTitle,
+      body: `<p class="pblock__intro">${t.sourceIntro}</p>
         <p class="project__links">
-          <a class="btn" href="https://github.com/${p.repo}" rel="noopener">GitHub ↗</a>
-          <a class="btn btn--ghost" href="/projects/${p.slug}/docs/">Dokumentasi →</a>
+          <a class="btn" href="https://github.com/${p.repo}" rel="noopener">${t.githubCta}</a>
+          <a class="btn btn--ghost" href="${docsHref}">${t.docsCta}${t.docsCtaNote}</a>
         </p>`,
     })
   }
@@ -215,38 +180,107 @@ function detailSections(p: Project): string {
     .join("")
 }
 
-for (const [index, p] of PROJECTS.entries()) {
-  const num = String(index + 1).padStart(2, "0")
-  const detail = layout({
-    title: `${p.name} — MiniLabs`,
-    desc: p.tagline,
-    canon: `${base}/projects/${p.slug}/`,
-    ogTitle: `${p.name} — ${p.tagline}`,
-    body: `
+const urls: string[] = []
+
+// ── Hub + halaman detail (id + en) ──────────────────────────────────────
+const liveCount = PROJECTS.filter((p) => p.status === "live").length
+const plannedCount = PROJECTS.length - liveCount
+
+for (const L of LANGS) {
+  const lang = L.code
+  const t = CHROME[lang]
+  const home = homeUrl(lang)
+
+  // Hub
+  const cards = PROJECTS.map(
+    (p) => `
+  <a class="card" href="${href(lang, `projects/${p.slug}/`)}">
+    <div class="card__head">
+      <span class="card__name">${p.name}</span>
+      <span class="status status--${p.status}">${statusLabel[p.status]}</span>
+    </div>
+    <p class="card__tagline">${p.content[lang].tagline}</p>
+  </a>`,
+  ).join("\n")
+
+  const aboutMeta = t.aboutMeta
+    .replace("{total}", String(PROJECTS.length))
+    .replace("{live}", String(liveCount))
+    .replace("{planned}", String(plannedCount))
+
+  const hubBody = `
+  <section class="hero" id="top">
+    <p class="hero__kicker" data-reveal>${HERO_KICKER}</p>
+    <h1 class="hero-title">${HERO_TITLE}</h1>
+    <p class="hero-sub" data-reveal>${t.heroSub}</p>
+    <div class="hero__cta" data-reveal>
+      <a class="btn" href="${href(lang, "projects/minicode/")}">${t.heroCtaPrimary}</a>
+      <a class="btn btn--ghost" href="#proyek">${t.heroCtaSecondary}</a>
+    </div>
+  </section>
+  <section class="section" id="proyek" aria-label="${t.projectsLabel}">
+    <div class="section__aside">
+      <span class="section__index">01</span>
+      <span class="section__label">${t.projectsLabel}</span>
+    </div>
+    <div class="section__body">
+      <h2 class="section__title">${t.projectsTitle}</h2>
+      <div class="grid">${cards}</div>
+    </div>
+  </section>
+  <section class="section" id="tentang" aria-label="${t.aboutLabel}">
+    <div class="section__aside">
+      <span class="section__index">02</span>
+      <span class="section__label">${t.aboutLabel}</span>
+    </div>
+    <div class="section__body">
+      <h2 class="section__title">${t.aboutTitle}</h2>
+      <div class="editorial" data-reveal>
+        <p>${t.aboutP1}</p>
+        <p>${t.aboutP2}</p>
+      </div>
+      <ol class="principles" data-reveal>
+        ${t.aboutPrinciples.map((pr) => `<li>${pr}</li>`).join("")}
+      </ol>
+      <p class="about__meta">${aboutMeta}</p>
+      <p class="about__cta">
+        <a class="btn" href="${ORG}" rel="noopener">${t.aboutCta}</a>
+      </p>
+    </div>
+  </section>`
+
+  write(`${prefix(lang)}index.html`, layout({ lang, rel: "", title: t.homeTitle, desc: t.homeDesc, body: hubBody, isSite: true }))
+  urls.push(`${base}${href(lang, "")}`)
+
+  // Detail per proyek
+  for (const [index, p] of PROJECTS.entries()) {
+    const c = p.content[lang]
+    const rel = `projects/${p.slug}/`
+    const detailBody = `
     <article class="project">
-      <a class="back" href="/">← MiniLabs</a>
+      <a class="back" href="${home}">${t.backToLabs}</a>
       <header class="project__hero">
-        <span class="project__eyebrow">Proyek ${num}</span>
+        <span class="project__eyebrow">${t.projectEyebrow} ${String(index + 1).padStart(2, "0")}</span>
         <div class="project__title-row">
           <h1 class="project__name">${p.name}</h1>
           <span class="status status--${p.status}">${statusLabel[p.status]}</span>
         </div>
-        <p class="project__tagline">${p.tagline}</p>
+        <p class="project__tagline">${c.tagline}</p>
       </header>
       <div class="project__lede" data-reveal>
-        <p>${p.overview}</p>
+        <p>${c.overview}</p>
       </div>
-      ${detailSections(p)}
-    </article>`,
-  })
-  write(`projects/${p.slug}/index.html`, detail)
+      ${detailSections(p, lang)}
+    </article>`
+    write(
+      `${prefix(lang)}${rel}index.html`,
+      layout({ lang, rel, title: `${p.name} — MiniLabs`, desc: c.tagline, body: detailBody, isSite: true }),
+    )
+    urls.push(`${base}${href(lang, rel)}`)
+  }
 }
 
-// ── Dokumentasi per proyek (fetch + render dari repo sumber) ──────────────
-// Sumber docs = repo proyek (`docs/`); build mengklon dangkal lalu merender.
-// Gagal fetch (offline/build pertama) = degrade jujur: halaman detail tetap
-// tampil tanpa dokumen.
-const docUrls: string[] = []
+// ── Dokumentasi per proyek (id saja — konten bahasa sumber) ──────────────
 for (const p of PROJECTS) {
   if (!p.repo) continue
   const pages = await fetchProjectDocs({
@@ -256,56 +290,40 @@ for (const p of PROJECTS) {
   })
   if (pages.length === 0) continue
 
-  // Indeks docs
-  const indexBody = `
+  const t = CHROME.id
+  const docsRel = `projects/${p.slug}/docs/`
+  const docsIndexBody = `
     <article class="project project--docs">
-      <a class="back" href="/projects/${p.slug}/">← ${p.name}</a>
-      <h1 class="project__name">${p.name} — Dokumentasi</h1>
+      <a class="back" href="${homeUrl("id")}">← MiniLabs</a>
+      <h1 class="project__name project__name--doc">${p.name} — ${t.docsIndexTitle}</h1>
       <ul class="doclist">
-        ${pages
-          .map(
-            (d) => `<li><a href="/projects/${p.slug}/docs/${d.name}/">${d.title}</a></li>`,
-          )
-          .join("\n")}
+        ${pages.map((d) => `<li><a href="${href("id", `${docsRel}${d.name}/`)}">${d.title}</a></li>`).join("\n")}
       </ul>
     </article>`
   write(
-    `projects/${p.slug}/docs/index.html`,
-    layout({
-      title: `${p.name} — Dokumentasi`,
-      desc: `Dokumentasi ${p.name}.`,
-      canon: `${base}/projects/${p.slug}/docs/`,
-      ogTitle: `${p.name} — Dokumentasi`,
-      body: indexBody,
-    }),
+    `${docsRel}index.html`,
+    layout({ lang: "id", rel: docsRel, title: `${p.name} — ${t.docsIndexTitle}`, desc: `${t.docsIndexTitle} ${p.name}.`, body: docsIndexBody }),
   )
-  docUrls.push(`${base}/projects/${p.slug}/docs/`)
+  urls.push(`${base}${href("id", docsRel)}`)
 
-  // Tiap dokumen
   for (const d of pages) {
-    const body = `
+    const rel = `${docsRel}${d.name}/`
+    const docBody = `
       <article class="project project--docs">
-        <a class="back" href="/projects/${p.slug}/docs/">← Dokumentasi</a>
+        <a class="back" href="${href("id", docsRel)}">${t.docsBack}</a>
         <h1 class="project__name project__name--doc">${d.title}</h1>
         <div class="docs">${d.html}</div>
       </article>`
     write(
-      `projects/${p.slug}/docs/${d.name}/index.html`,
-      layout({
-        title: `${d.title} — ${p.name}`,
-        desc: `Dokumentasi ${p.name}: ${d.title}.`,
-        canon: `${base}/projects/${p.slug}/docs/${d.name}/`,
-        ogTitle: `${d.title} — ${p.name}`,
-        body,
-      }),
+      `${rel}index.html`,
+      layout({ lang: "id", rel, title: `${d.title} — ${p.name}`, desc: `${t.docsIndexTitle} ${p.name}: ${d.title}.`, body: docBody }),
     )
-    docUrls.push(`${base}/projects/${p.slug}/docs/${d.name}/`)
+    urls.push(`${base}${href("id", rel)}`)
   }
 }
 
-// ── sitemap + robots ────────────────────────────────────────────────────
+// ── sitemap + robots + llms ─────────────────────────────────────────────
 const now = new Date().toISOString().slice(0, 10)
-const urls = [`${base}/`, ...PROJECTS.map((p) => `${base}/projects/${p.slug}/`), ...docUrls]
 write(
   "sitemap.xml",
   `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
@@ -316,18 +334,17 @@ write(
   "robots.txt",
   `User-agent: *\nAllow: /\n\nSitemap: ${base}/sitemap.xml\n`,
 )
-
-// llms.txt — indeks untuk AI/agent yang browsing (konvensi llmstxt.org).
 write(
   "llms.txt",
   [
     "# MiniLabs",
     "",
-    "> Studio untuk mengeksplorasi kemungkinan dan membangun produk teknologi.",
+    "> An independent studio building focused open-source tools.",
     "",
-    "## Proyek",
-    ...PROJECTS.map((p) => `- [${p.name}](${base}/projects/${p.slug}/): ${p.tagline}`),
-    ...docUrls.map((u) => `- [Dokumentasi](${u})`),
+    "## Projects",
+    ...PROJECTS.map((p) => `- [${p.name}](${base}${href("id", `projects/${p.slug}/`)}): ${p.content.id.tagline}`),
+    ...PROJECTS.map((p) => `- [${p.name} (EN)](${base}${href("en", `projects/${p.slug}/`)}): ${p.content.en.tagline}`),
+    ...urls.filter((u) => u.includes("/docs/")).map((u) => `- [Documentation](${u})`),
     "",
   ].join("\n"),
 )
