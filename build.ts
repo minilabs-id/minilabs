@@ -3,6 +3,7 @@
 import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { PROJECTS } from "./projects.ts"
+import { type DocPage, fetchProjectDocs } from "./docs.ts"
 
 const root = import.meta.dir
 const site = join(root, "site")
@@ -157,15 +158,76 @@ for (const p of PROJECTS) {
         <p>${p.overview}</p>
       </div>
       ${highlights}
-      ${p.repo ? `<p class="project__repo"><a href="https://github.com/${p.repo}" rel="noopener">github.com/${p.repo}</a></p>` : ""}
+      ${p.repo ? `<p class="project__repo"><a href="https://github.com/${p.repo}" rel="noopener">github.com/${p.repo}</a> · <a href="/projects/${p.slug}/docs/">Dokumentasi</a></p>` : ""}
     </article>`,
   })
   write(`projects/${p.slug}/index.html`, detail)
 }
 
+// ── Dokumentasi per proyek (fetch + render dari repo sumber) ──────────────
+// Sumber docs = repo proyek (`docs/`); build mengklon dangkal lalu merender.
+// Gagal fetch (offline/build pertama) = degrade jujur: halaman detail tetap
+// tampil tanpa dokumen.
+const docUrls: string[] = []
+for (const p of PROJECTS) {
+  if (!p.repo) continue
+  const pages = await fetchProjectDocs({
+    repo: p.repo,
+    docsDir: "docs",
+    cacheDir: join(root, ".docs-cache"),
+  })
+  if (pages.length === 0) continue
+
+  // Indeks docs
+  const indexBody = `
+    <article class="project project--docs">
+      <a class="back" href="/projects/${p.slug}/">← ${p.name}</a>
+      <h1 class="project__name">${p.name} — Dokumentasi</h1>
+      <ul class="doclist">
+        ${pages
+          .map(
+            (d) => `<li><a href="/projects/${p.slug}/docs/${d.name}/">${d.title}</a></li>`,
+          )
+          .join("\n")}
+      </ul>
+    </article>`
+  write(
+    `projects/${p.slug}/docs/index.html`,
+    layout({
+      title: `${p.name} — Dokumentasi`,
+      desc: `Dokumentasi ${p.name}.`,
+      canon: `${base}/projects/${p.slug}/docs/`,
+      ogTitle: `${p.name} — Dokumentasi`,
+      body: indexBody,
+    }),
+  )
+  docUrls.push(`${base}/projects/${p.slug}/docs/`)
+
+  // Tiap dokumen
+  for (const d of pages) {
+    const body = `
+      <article class="project project--docs">
+        <a class="back" href="/projects/${p.slug}/docs/">← Dokumentasi</a>
+        <h1 class="project__name project__name--doc">${d.title}</h1>
+        <div class="docs">${d.html}</div>
+      </article>`
+    write(
+      `projects/${p.slug}/docs/${d.name}/index.html`,
+      layout({
+        title: `${d.title} — ${p.name}`,
+        desc: `Dokumentasi ${p.name}: ${d.title}.`,
+        canon: `${base}/projects/${p.slug}/docs/${d.name}/`,
+        ogTitle: `${d.title} — ${p.name}`,
+        body,
+      }),
+    )
+    docUrls.push(`${base}/projects/${p.slug}/docs/${d.name}/`)
+  }
+}
+
 // ── sitemap + robots ────────────────────────────────────────────────────
 const now = new Date().toISOString().slice(0, 10)
-const urls = [`${base}/`, ...PROJECTS.map((p) => `${base}/projects/${p.slug}/`)]
+const urls = [`${base}/`, ...PROJECTS.map((p) => `${base}/projects/${p.slug}/`), ...docUrls]
 write(
   "sitemap.xml",
   `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
