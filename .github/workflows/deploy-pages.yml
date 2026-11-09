@@ -4,8 +4,11 @@ on:
   push:
     branches: ["main"]
   workflow_dispatch:
-  # dokumentasi proyek di-build ulang tiap jadwal agar ikut ter-update
-  # walau repo proyek lain (minicode/dst) yang berubah.
+  # Trigger lintas-repo: repo proyek (mis. minicode) kirim `update-docs` saat
+  # docs-nya berubah, sehingga halaman dokumentasi ter-update SEKETIKA (tanpa
+  # menunggu jadwal harian).
+  repository_dispatch:
+    types: ["update-docs"]
   schedule:
     - cron: "17 3 * * *"
 

@@ -172,7 +172,11 @@ export async function fetchProjectDocs(opts: {
   }
 
   if (!existsSync(docsPath)) return []
-  const files = readdirSync(docsPath).filter((f) => f.endsWith(".md"))
+  // Meta/navigation bukan konten — jangan dirender sebagai halaman docs.
+  const META = new Set(["readme.md", "summary.md"])
+  const files = readdirSync(docsPath)
+    .filter((f) => f.endsWith(".md") && !META.has(f.toLowerCase()))
+    .sort((a, b) => a.localeCompare(b))
   const pages: DocPage[] = []
   for (const f of files) {
     const name = f.replace(/\.md$/, "")
