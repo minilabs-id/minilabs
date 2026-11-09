@@ -22,16 +22,16 @@ export const PROJECTS: Project[] = [
     slug: "minicode",
     name: "MiniCode",
     status: "live",
-    tagline: "Coding agent CLI untuk terminal — tiap langkah terlihat, tiap aksi sensitif lewat izin Anda.",
+    tagline: "Coding agent CLI open-source untuk terminal — setiap langkah terlihat, setiap aksi sensitif lewat izin Anda.",
     overview:
-      "MiniCode adalah coding agent CLI open source. Berjalan di atas MiniCore yang beku, zero-dependency (Bun). Tiap aksi tool tampil di scrollback, perubahan file dijail ke workspace, dan perintah sensitif lewat izin Anda.",
+      "MiniCode adalah coding agent CLI open-source di atas kernel MiniCore yang beku, zero-dependency (Bun saja). Sesi interaktif berjalan sebagai TUI fullscreen; tugas sekali-jalan dan CI mengalir sebagai stream JSONL mesin. Perubahan file dijail ke workspace, perintah shell dijaga bash-guard, dan aksi sensitif selalu melewati izin Anda — dilengkapi checkpoint shadow-git dan jurnal mutasi agar resume tidak mengulang buta.",
     repo: "startupmini/minicode",
     highlights: [
-      "Zero-dependency (Bun), tokenizer diunduh on-demand",
-      "Jail path + bash-guard + sandbox (docker/OS)",
+      "Zero-dependency (Bun), kernel MiniCore ter-freeze",
+      "Jail path + bash guard + sandbox (docker / OS)",
       "WorkMode (DISCUSS/PLAN/BUILD) + PermissionMode (AUTO/ASK)",
       "MCP, LSP, sub-agent (delegate_task), checkpoint shadow-git",
-      "Mutation journal durable + resume tanpa redo buta",
+      "Jurnal mutasi durable + resume tanpa redo buta",
     ],
   },
   {
