@@ -53,11 +53,11 @@ export function catalogEntries(): CatalogEntry[] {
       type: "application/ai-catalog+json",
       url: `${SITE_BASE}${ARD_PATH}`,
       description:
-        "Federated entry source for MiniLabs, an independent studio building focused open-source agentic tools.",
-      tags: ["minilabs", "open-source", "studio", "agentic", "catalog"],
+        "Federated entry source for MiniLabs, an independent laboratory for experiments in making things.",
+      tags: ["minilabs", "laboratory", "experiments", "catalog"],
       representativeQueries: [
-        "what open-source agentic tools does MiniLabs build",
-        "find a small auditable coding agent for the terminal",
+        "what does MiniLabs build and experiment with",
+        "find a small, auditable coding agent for the terminal",
       ],
     },
   ]

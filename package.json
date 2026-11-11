@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Situs MiniLabs — hub portofolio statis untuk proyek-proyek MiniLabs (minicode, minibug, minibot, miniword).",
+  "description": "Situs MiniLabs — hub statis bilingual (id/en) untuk proyek & eksperimen MiniLabs; dokumentasi proyek dirender otomatis dari repo masing-masing.",
   "license": "MIT",
   "repository": {
     "type": "git",

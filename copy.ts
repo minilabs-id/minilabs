@@ -2,6 +2,10 @@
 // `<html lang>`, navigasi, hero, section, footer, label seksi detail, dan meta.
 // konten proyek (tagline/overview/dst) terlokalisasi terpisah di projects.ts.
 // Semua nilai di sini adalah TEKS BIASA (tanpa HTML) — build.ts meng-escape-nya.
+//
+// Posisi MiniLabs: laboratorium eksperimen independen yang membuat dan menguji
+// hal-hal kecil. Sengaja digeneralkan — TIDAK mengklaim "open source" sebagai
+// identitas, dan TIDAK mengklaim semua proyeknya soal AI.
 
 export type Lang = "id" | "en"
 
@@ -29,7 +33,10 @@ export interface SiteCopy {
   langLabel: string
   /** Teks skip-link. */
   skipLink: string
+  /** Kicker kecil di atas judul hero. */
+  heroKicker: string
   heroSub: string
+  /** CTA utama; `{name}` diganti nama proyek unggulan di build.ts. */
   heroCtaPrimary: string
   heroCtaSecondary: string
   projectsLabel: string
@@ -81,44 +88,45 @@ export const CHROME: Record<Lang, SiteCopy> = {
     navLabel: "Navigasi utama",
     langLabel: "Bahasa",
     skipLink: "Lewati ke konten",
+    heroKicker: "Laboratorium eksperimen · independen",
     heroSub:
-      "Studio independen yang membangun alat open source yang fokus — dari coding agent hingga CMS.",
-    heroCtaPrimary: "Jelajahi MiniCode →",
+      "Tempat kami membuat, menguji, dan sesekali merilis hal-hal kecil — satu ide per proyek, tanpa memaksakan fitur.",
+    heroCtaPrimary: "Lihat {name} →",
     heroCtaSecondary: "Semua proyek",
     projectsLabel: "Proyek",
     projectsTitle: "Dibangun di sini.",
     aboutLabel: "Tentang",
     aboutTitle: "Tentang MiniLabs",
     aboutP1:
-      "MiniLabs adalah studio open source yang membangun alat kecil yang fokus dan bisa diaudit — satu ide, satu proyek, tanpa menggembungkan fitur. Semua berbagi fondasi yang sama: kernel MiniCore.",
+      "MiniLabs adalah laboratorium eksperimen independen — tempat membuat, menguji, dan sesekali merilis hal-hal kecil, satu ide per proyek. Tidak semua proyek open source, dan tidak semua soal AI; sebagian hanyalah eksperimen yang layak dicoba.",
     aboutP2:
-      "Coding agent, bug bounty, sampai CMS — yang menyatukannya bukan kategori, melainkan pendekatan: dependency seminim mungkin, dokumentasi yang jujur, dan antarmuka yang mereda.",
+      "Dari alat dan agen sampai CMS dan eksperimen iseng — yang menyatukan bukan kategori, melainkan cara kerja: sederhana, jujur soal batas dan kegagalan, dan antarmuka yang mereda agar karyanya yang bicara.",
     aboutPrinciples: [
-      "Zero-dependency — tanpa runtime pihak ketiga; permukaan audit kecil, install cepat.",
+      "Sederhana & ringan — minim dependensi; permukaan yang kecil, mudah dipahami dan diaudit.",
       "Jujur & terukur — batas dan kegagalan dilaporkan apa adanya, bukan klaim.",
-      "Dokumentasi hidup — manual ditulis di repo, dirender otomatis di sini saat kode berubah.",
+      "Dokumentasi hidup — catatan ditulis bersama kode, dirender otomatis di sini saat berubah.",
       "Minimalis monokrom — hitam di atas krem; desain yang mereda agar karyanya yang bicara.",
     ],
-    aboutMeta: "{total} proyek — {live} aktif, {planned} dalam perencanaan.",
+    aboutMeta: "{total} proyek & eksperimen — {live} aktif, {planned} dalam perencanaan.",
     aboutCta: "GitHub ↗",
     projectEyebrow: "Proyek",
     installTitle: "Instalasi",
-    installIntro: "Dari nol ke prompt pertama dalam beberapa langkah.",
+    installIntro: "Dari nol sampai bisa dipakai dalam beberapa langkah.",
     capabilitiesTitle: "Kemampuan",
     roadmapTitle: "Rencana",
     statusTitle: "Status",
-    sourceTitle: "Sumber & dokumentasi",
-    sourceIntro: "Kode, rilis, dan manual lengkap satu klik dari sini.",
+    sourceTitle: "Kode & dokumentasi",
+    sourceIntro: "Repo, rilis, dan dokumentasi lengkap satu klik dari sini.",
     githubCta: "GitHub ↗",
     docsCta: "Dokumentasi →",
     docsCtaNote: "",
     backToLabs: "← MiniLabs",
     docsIndexTitle: "Dokumentasi",
     docsBack: "← Dokumentasi",
-    homeTitle: "MiniLabs — Exploring ideas. Engineering possibilities.",
+    homeTitle: "MiniLabs — laboratorium eksperimen independen",
     homeDesc:
-      "MiniLabs adalah studio independen yang membangun alat open source yang fokus — MiniCode (coding agent), MiniBug, MiniBot, MiniWord.",
-    ogImageAlt: "MiniLabs — studio open source independen",
+      "MiniLabs adalah laboratorium eksperimen independen yang membuat dan menguji hal-hal kecil — alat, agen, CMS, sampai eksperimen iseng. Tidak semuanya open source, dan tidak semuanya soal AI.",
+    ogImageAlt: "MiniLabs — laboratorium eksperimen independen",
     notFoundTitle: "404 — Halaman tidak ditemukan",
     notFoundHeading: "Halaman tidak ditemukan",
     notFoundBody: "Tautan yang Anda buka mungkin sudah dipindahkan atau tidak pernah ada.",
@@ -136,43 +144,45 @@ export const CHROME: Record<Lang, SiteCopy> = {
     navLabel: "Main navigation",
     langLabel: "Language",
     skipLink: "Skip to content",
-    heroSub: "An independent studio building focused open-source tools — from coding agents to CMS.",
-    heroCtaPrimary: "Explore MiniCode →",
+    heroKicker: "Independent lab · build & experiment",
+    heroSub:
+      "A place to make, test, and occasionally ship small things — one idea per project, with no forced features.",
+    heroCtaPrimary: "See {name} →",
     heroCtaSecondary: "All projects",
     projectsLabel: "Projects",
     projectsTitle: "Built here.",
     aboutLabel: "About",
     aboutTitle: "About MiniLabs",
     aboutP1:
-      "MiniLabs is an open-source studio building small, focused, auditable tools — one idea, one project, no feature bloat. Everything shares one foundation: the MiniCore kernel.",
+      "MiniLabs is an independent laboratory — a place to make, test, and occasionally ship small things, one idea per project. Not everything is open source, and not everything is about AI; some are just experiments worth trying.",
     aboutP2:
-      "Coding agents, bug bounty, to CMS — what ties them together isn't the category, but the approach: minimal dependencies, honest documentation, and an interface that steps back.",
+      "From tools and agents to a CMS and idle experiments — what ties them together isn't the category, but the way of working: simple, honest about limits and failures, and an interface that steps back so the work can speak.",
     aboutPrinciples: [
-      "Zero-dependency — no third-party runtime; a small audit surface, fast installs.",
+      "Simple & light — as few dependencies as possible; a small surface, easy to understand and audit.",
       "Honest & measured — limits and failures reported as they are, not claims.",
-      "Living documentation — manuals are written in the repo, rendered here automatically when code changes.",
+      "Living documentation — notes written alongside the code, rendered here automatically as it changes.",
       "Monochromatic minimalism — black on cream; a design that recedes so the work can speak.",
     ],
-    aboutMeta: "{total} projects — {live} live, {planned} planned.",
+    aboutMeta: "{total} projects & experiments — {live} live, {planned} planned.",
     aboutCta: "GitHub ↗",
     projectEyebrow: "Project",
     installTitle: "Install",
-    installIntro: "From zero to your first prompt in a few steps.",
+    installIntro: "From zero to usable in a few steps.",
     capabilitiesTitle: "Capabilities",
     roadmapTitle: "Roadmap",
     statusTitle: "Status",
-    sourceTitle: "Source & documentation",
-    sourceIntro: "Code, releases, and the full manual one click away.",
+    sourceTitle: "Code & documentation",
+    sourceIntro: "Repo, releases, and full documentation one click away.",
     githubCta: "GitHub ↗",
     docsCta: "Documentation →",
     docsCtaNote: " (Bahasa Indonesia)",
     backToLabs: "← MiniLabs",
     docsIndexTitle: "Documentation",
     docsBack: "← Documentation",
-    homeTitle: "MiniLabs — Exploring ideas. Engineering possibilities.",
+    homeTitle: "MiniLabs — an independent laboratory",
     homeDesc:
-      "MiniLabs is an independent studio building focused open-source tools — MiniCode (coding agent), MiniBug, MiniBot, MiniWord.",
-    ogImageAlt: "MiniLabs — an independent open-source studio",
+      "MiniLabs is an independent laboratory that makes and tests small things — tools, agents, a CMS, and idle experiments. Not everything is open source, and not everything is about AI.",
+    ogImageAlt: "MiniLabs — an independent laboratory",
     notFoundTitle: "404 — Page not found",
     notFoundHeading: "Page not found",
     notFoundBody: "The link you followed may have moved, or may never have existed.",

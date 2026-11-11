@@ -60,11 +60,11 @@ export const PROJECTS: Project[] = [
     slug: "minicode",
     name: "MiniCode",
     status: "live",
-    repo: "startupmini/minicode",
+    repo: "minilabs-id/minicode",
     discovery: {
       namespace: "agent",
       type: "application/agent-card+json",
-      url: "https://github.com/startupmini/minicode",
+      url: "https://github.com/minilabs-id/minicode",
       capabilities: [
         "CodeEditing",
         "ShellCommandExecution",
@@ -75,7 +75,7 @@ export const PROJECTS: Project[] = [
       ],
       tags: ["coding-agent", "cli", "terminal", "open-source", "bun", "agentic"],
       representativeQueries: [
-        "find an open-source coding agent CLI for the terminal",
+        "find a coding agent CLI for the terminal",
         "install a Bun-based coding agent that gates sensitive actions behind permissions",
         "run a headless coding agent in CI with a machine-readable JSONL stream",
       ],
@@ -88,9 +88,9 @@ export const PROJECTS: Project[] = [
     content: {
       id: {
         tagline:
-          "Coding agent CLI open-source untuk terminal — setiap langkah terlihat, setiap aksi sensitif lewat izin Anda.",
+          "Coding agent CLI untuk terminal — setiap langkah terlihat, setiap aksi sensitif lewat izin Anda.",
         overview:
-          "MiniCode adalah coding agent CLI open-source di atas kernel MiniCore yang beku, zero-dependency (Bun saja). Sesi interaktif berjalan sebagai TUI fullscreen; tugas sekali-jalan dan CI mengalir sebagai stream JSONL mesin. Perubahan file dijail ke workspace, perintah shell dijaga bash-guard, dan aksi sensitif selalu melewati izin Anda — dilengkapi checkpoint shadow-git dan jurnal mutasi agar resume tidak mengulang buta.",
+          "MiniCode adalah coding agent CLI di atas kernel MiniCore yang beku, zero-dependency (Bun saja). Sesi interaktif berjalan sebagai TUI fullscreen; tugas sekali-jalan dan CI mengalir sebagai stream JSONL mesin. Perubahan file dijail ke workspace, perintah shell dijaga bash-guard, dan aksi sensitif selalu melewati izin Anda — dilengkapi checkpoint shadow-git dan jurnal mutasi agar resume tidak mengulang buta.",
         highlights: [
           "Zero-dependency (Bun), kernel MiniCore ter-freeze",
           "Jail path + bash guard + sandbox (docker / OS)",
@@ -115,9 +115,9 @@ export const PROJECTS: Project[] = [
       },
       en: {
         tagline:
-          "An open-source coding agent CLI for the terminal — every step visible, every sensitive action gated behind your permission.",
+          "A coding agent CLI for the terminal — every step visible, every sensitive action gated behind your permission.",
         overview:
-          "MiniCode is an open-source coding agent CLI on the frozen MiniCore kernel — zero-dependency (Bun only). Interactive sessions run as a fullscreen TUI; one-shot and CI runs flow as a machine-readable JSONL stream. File changes are jailed to the workspace, shell commands are guarded by a bash-guard, and sensitive actions always pass through your permission — with shadow-git checkpoints and a mutation journal so resume never re-does work blindly.",
+          "MiniCode is a coding agent CLI on the frozen MiniCore kernel — zero-dependency (Bun only). Interactive sessions run as a fullscreen TUI; one-shot and CI runs flow as a machine-readable JSONL stream. File changes are jailed to the workspace, shell commands are guarded by a bash-guard, and sensitive actions always pass through your permission — with shadow-git checkpoints and a mutation journal so resume never re-does work blindly.",
         highlights: [
           "Zero-dependency (Bun), frozen MiniCore kernel",
           "Path jail + bash guard + sandbox (Docker / OS)",
@@ -148,9 +148,9 @@ export const PROJECTS: Project[] = [
     status: "planned",
     content: {
       id: {
-        tagline: "Agent bug bounty — menemukan kerentanan sebelum orang lain melakukannya.",
+        tagline: "Eksperimen alat keamanan — menemukan kerentanan sebelum orang lain melakukannya.",
         overview:
-          "MiniBug adalah agent khusus bug bounty: menjelajah target, memetakan permukaan serangan, dan melaporkan temuan dengan bukti. Berbasis MiniCore, dengan pagar scope yang ketat.",
+          "MiniBug adalah eksperimen alat untuk bug bounty: menjelajah target, memetakan permukaan serangan, dan melaporkan temuan dengan bukti. Berbasis MiniCore, dengan pagar scope yang ketat.",
         highlights: [
           "Pemetaan permukaan serangan otomatis",
           "Pengujian terbungkus pagar scope yang ketat",
@@ -160,9 +160,9 @@ export const PROJECTS: Project[] = [
           "Masih dalam perencanaan. MiniBug akan berjalan di atas MiniCore dan mengadopsi batas keamanan yang sama — jail, gate, dan jurnal — untuk menguji target di dalam scope yang Anda tetapkan. Belum tersedia untuk diinstal.",
       },
       en: {
-        tagline: "A bug-bounty agent — finding vulnerabilities before someone else does.",
+        tagline: "A security-tooling experiment — finding vulnerabilities before someone else does.",
         overview:
-          "MiniBug is a dedicated bug-bounty agent: it explores targets, maps the attack surface, and reports findings with evidence. Built on MiniCore, with strict scope guardrails.",
+          "MiniBug is an experiment in bug-bounty tooling: it explores targets, maps the attack surface, and reports findings with evidence. Built on MiniCore, with strict scope guardrails.",
         highlights: [
           "Automated attack-surface mapping",
           "Testing wrapped in strict scope guardrails",
@@ -179,28 +179,28 @@ export const PROJECTS: Project[] = [
     status: "planned",
     content: {
       id: {
-        tagline: "Agent general-purpose untuk tugas harian — dari riset hingga otomasi.",
+        tagline: "Asisten serba-guna untuk tugas harian — dari riset hingga otomasi.",
         overview:
-          "MiniBot adalah agent serba-guna: eksplorasi, riset, dan otomasi tugas berulang. Ringan, cepat, dan bisa diarahkan lewat prompt sederhana.",
+          "MiniBot adalah eksperimen asisten serba-guna: eksplorasi, riset, dan otomasi tugas berulang. Ringan, cepat, dan bisa diarahkan lewat instruksi sederhana.",
         highlights: [
           "Eksplorasi & riset multi-langkah",
           "Otomasi tugas berulang",
           "Ringan dan diarahkan lewat prompt sederhana",
         ],
         plannedNote:
-          "Masih dalam perencanaan. MiniBot akan menjadi pintu masuk paling mudah ke ekosistem MiniLabs — agent harian untuk riset dan otomasi tanpa kurva belajar yang curam. Belum tersedia untuk diinstal.",
+          "Masih dalam perencanaan. MiniBot akan menjadi pintu masuk paling mudah ke ekosistem MiniLabs — asisten harian untuk riset dan otomasi tanpa kurva belajar yang curam. Belum tersedia untuk diinstal.",
       },
       en: {
-        tagline: "A general-purpose agent for everyday tasks — from research to automation.",
+        tagline: "A general-purpose assistant for everyday tasks — from research to automation.",
         overview:
-          "MiniBot is an all-purpose agent: exploration, research, and automation of repetitive tasks. Lightweight, fast, and steerable with a simple prompt.",
+          "MiniBot is a general-purpose assistant experiment: exploration, research, and automation of repetitive tasks. Lightweight, fast, and steerable with a simple instruction.",
         highlights: [
           "Multi-step exploration & research",
           "Automation of repetitive tasks",
           "Lightweight and steerable with a simple prompt",
         ],
         plannedNote:
-          "Still in planning. MiniBot will be the easiest entry point into the MiniLabs ecosystem — an everyday agent for research and automation without a steep learning curve. Not yet available to install.",
+          "Still in planning. MiniBot will be the easiest entry point into the MiniLabs ecosystem — an everyday assistant for research and automation without a steep learning curve. Not yet available to install.",
       },
     },
   },
@@ -219,7 +219,7 @@ export const PROJECTS: Project[] = [
           "Gratis dan tanpa server yang diurus",
         ],
         plannedNote:
-          "Masih dalam perencanaan. MiniWord mengusung filosofi MiniLabs yang sama: zero-dependency dan di-deploy ke Cloudflare, sehingga konten Anda berada di edge tanpa biaya dan tanpa infrastruktur sendiri. Belum tersedia untuk diinstal.",
+          "Masih dalam perencanaan. MiniWord mengusung pendekatan MiniLabs yang sama: sederhana dan di-deploy ke Cloudflare, sehingga konten Anda berada di edge tanpa biaya dan tanpa infrastruktur sendiri. Belum tersedia untuk diinstal.",
       },
       en: {
         tagline: "A lightweight CMS on Cloudflare — free, fast, no server to manage.",
@@ -231,7 +231,7 @@ export const PROJECTS: Project[] = [
           "Free, with no server to manage",
         ],
         plannedNote:
-          "Still in planning. MiniWord follows the same MiniLabs philosophy — zero-dependency, deployed to Cloudflare, so your content lives on the edge with no cost and no infrastructure of your own. Not yet available to install.",
+          "Still in planning. MiniWord follows the same MiniLabs approach — simple, deployed to Cloudflare, so your content lives on the edge with no cost and no infrastructure of your own. Not yet available to install.",
       },
     },
   },

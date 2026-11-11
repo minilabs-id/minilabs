@@ -2,7 +2,7 @@
 // Zero-dependency (node:fs/path). Baca projects.ts + copy.ts → generate site/.
 // Konten proyek (docs) = single source bahasa sumber (Indonesia), dirender sekali
 // di namespace id; chrome situs (hub + halaman proyek) dibuat untuk id dan en.
-import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { PROJECTS, type Project } from "./projects.ts"
 import { type DocPage, fetchProjectDocs } from "./docs.ts"
@@ -19,12 +19,18 @@ import {
 const root = import.meta.dir
 const site = join(root, "site")
 
-// Identitas brand (Bahasa Inggris, sama di semua locale).
-const HERO_KICKER = "Independent studio · open source"
+// CSS di-inline ke <head> tiap halaman: menghapus permintaan stylesheet yang
+// render-blocking sekaligus satu RTT pada jalur kritis pertama. Berkasnya kecil
+// (dan mengompres baik), jadi menukar cache lintas-halaman dengan FCP lebih cepat
+// adalah trade-off yang tepat untuk skor mobile.
+const stylesCss = readFileSync(join(root, "styles.css"), "utf8")
+
+// Identitas brand (Bahasa Inggris, sama di semua locale). Kicker hero
+// dilokalisasi lewat copy.ts (`heroKicker`).
 const HERO_TITLE = `Ideas are meant<br />to be built.`
 const FOOTER_TAGLINE = "Exploring ideas. Engineering possibilities."
 const statusLabel = { live: "Live", beta: "Beta", planned: "Planned" } as const
-const ORG = "https://github.com/startupmini"
+const ORG = "https://github.com/minilabs-id"
 
 // og:image butuh raster (banyak platform mengabaikan SVG). Pakai `og.*` bila ada,
 // jika tidak jatuh balik ke logo SVG.
@@ -98,10 +104,9 @@ ${alts}
 <meta name="twitter:image" content="${ogImage}" />
 <meta name="theme-color" content="#f6f5f0" />
 <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/styles.css" />
+<link rel="preload" href="/fonts/space-grotesk-var.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/ibm-plex-mono-500.woff2" as="font" type="font/woff2" crossorigin />
+<style>${stylesCss}</style>
 <script>document.documentElement.classList.add("js")</script>
 </head>
 <body>
@@ -243,11 +248,11 @@ for (const L of LANGS) {
 
   const hubBody = `
   <section class="hero" id="top">
-    <p class="hero__kicker" data-reveal>${HERO_KICKER}</p>
+    <p class="hero__kicker" data-reveal>${esc(t.heroKicker)}</p>
     <h1 class="hero-title">${HERO_TITLE}</h1>
     <p class="hero-sub" data-reveal>${esc(t.heroSub)}</p>
     <div class="hero__cta" data-reveal>
-      <a class="btn" href="${href(lang, `projects/${featured.slug}/`)}">${esc(t.heroCtaPrimary)}</a>
+      <a class="btn" href="${href(lang, `projects/${featured.slug}/`)}">${esc(t.heroCtaPrimary.replace("{name}", featured.name))}</a>
       <a class="btn btn--ghost" href="#proyek">${esc(t.heroCtaSecondary)}</a>
     </div>
   </section>
@@ -392,14 +397,14 @@ write(
 )
 write(
   "robots.txt",
-  `User-agent: *\nAllow: /\n\n# ARD (Agentic Resource Discovery) entry source.\nAgentmap: ${base}${ARD_PATH}\n\nSitemap: ${base}/sitemap.xml\n`,
+  `User-agent: *\nAllow: /\n\n# ARD (Agentic Resource Discovery) manifest (referenced from each page's <link rel="ard">).\n# ${base}${ARD_PATH}\n\nSitemap: ${base}/sitemap.xml\n`,
 )
 write(
   "llms.txt",
   [
     "# MiniLabs",
     "",
-    "> An independent studio building focused open-source tools.",
+    "> An independent laboratory for experiments in making things.",
     "",
     "## Projects",
     ...PROJECTS.map((p) => `- [${p.name}](${base}${href("id", `projects/${p.slug}/`)}): ${p.content.id.tagline}`),
@@ -414,9 +419,10 @@ write(
 )
 
 // ── aset statis ─────────────────────────────────────────────────────────
-for (const f of ["styles.css", "app.js", "logo.svg", "CNAME", ...(ogFile ? [ogFile] : [])]) {
+for (const f of ["app.js", "logo.svg", "CNAME", ...(ogFile ? [ogFile] : [])]) {
   cpSync(join(root, f), join(site, f))
 }
+cpSync(join(root, "fonts"), join(site, "fonts"), { recursive: true })
 write(".nojekyll", "")
 
 console.log(

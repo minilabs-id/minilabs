@@ -1,7 +1,7 @@
 # MiniLabs
 
-Situs publik MiniLabs: hub portofolio statis (bilingual **id/en**) untuk proyek
-open source MiniLabs — MiniCode, MiniBug, MiniBot, MiniWord — plus halaman
+Situs publik MiniLabs: hub statis (bilingual **id/en**) untuk proyek &
+eksperimen MiniLabs — MiniCode, MiniBug, MiniBot, MiniWord — plus halaman
 dokumentasi yang dirender otomatis dari repo tiap proyek.
 
 Statis murni, **zero-dependency** (hanya `node:fs`/`node:path` + `Bun`), tanpa
@@ -37,7 +37,9 @@ sebelum push — CI juga menjalankannya.
 | `docs.ts` | Renderer markdown minimal + pengambil `docs/**` dari repo proyek. |
 | `server.ts` | Dev server (sajikan `site/`, rebuild saat sumber berubah). |
 | `check.ts` | Validator/smoke test output build. |
-| `styles.css`, `app.js`, `logo.svg`, `CNAME` | Aset statis yang disalin ke `site/`. |
+| `styles.css` | CSS sumber — di-*inline* ke `<head>` tiap halaman saat build (hapus render-blocking). |
+| `fonts/` | Font self-hosted (woff2, subset latin) — disalin ke `site/fonts/`. |
+| `app.js`, `logo.svg`, `CNAME` | Aset statis yang disalin ke `site/`. |
 | `site/`, `.docs-cache/` | Hasil build & cache klon (gitignored). |
 
 ## Menambah / mengubah proyek
@@ -60,14 +62,15 @@ Situs mempublikasikan **[Agentic Resource Discovery](https://github.com/ards-pro
 - `/.well-known/ard.json` — path kanonik ARD (spesifikasi §5.1).
 - `/.well-known/ai-catalog.json` — path pendahulu; isinya setara.
 - Tiap halaman menyertakan `<link rel="ard" ...>` dan `<link rel="ai-catalog" ...>`.
-- `robots.txt` menunjuk entry source lewat `Agentmap:`.
+- `robots.txt` mencantumkan URL manifest di komentar; tiap halaman juga
+  menautkannya lewat `<link rel="ard" ...>`.
 
 Manifest dibangun dari [`catalog.ts`](./catalog.ts) dengan sumber data
 `discovery` di [`projects.ts`](./projects.ts). Hanya proyek berstatus `live`
 yang punya blok `discovery` yang diiklankan — proyek `planned` sengaja
 dikeluarkan agar registry tidak mengindeks resource yang belum ada.
 
-Untuk mempublikasikan proyek sebagai resource agentic, tambahkan blok
+Untuk mempublikasikan proyek sebagai resource yang bisa ditemukan agen, tambahkan blok
 `discovery` (lihat tipe `ProjectDiscovery`): `namespace` (segmen URN, mis.
 `agent`), `type` (IANA media type, mis. `application/agent-card+json`), `url`
 kanonik dokumen artifact, `capabilities`, `tags`, dan `representativeQueries`

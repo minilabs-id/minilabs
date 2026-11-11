@@ -29,9 +29,11 @@ const required = [
   "robots.txt",
   "llms.txt",
   ".nojekyll",
-  "styles.css",
   "app.js",
   "logo.svg",
+  "fonts/space-grotesk-var.woff2",
+  "fonts/ibm-plex-mono-400.woff2",
+  "fonts/ibm-plex-mono-500.woff2",
   "CNAME",
   ".well-known/ard.json",
   ".well-known/ai-catalog.json",
@@ -159,8 +161,14 @@ for (const file of htmlFiles(site)) {
 {
   const robots = readFileSync(join(site, "robots.txt"), "utf8")
   if (!robots.includes("Sitemap: https://minilabs.id/sitemap.xml")) fail("robots.txt: Sitemap hilang")
-  if (!robots.includes("Agentmap: https://minilabs.id/.well-known/ard.json")) {
-    fail("robots.txt: Agentmap (ARD) hilang")
+  // Directive tak dikenal (mis. "Agentmap:") membuat validator menolak file.
+  // Hanya directive standar yang boleh aktif; sisanya harus jadi komentar.
+  for (const line of robots.split("\n")) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith("#")) continue
+    if (!/^(User-agent|Allow|Disallow|Sitemap|Crawl-delay):/i.test(trimmed)) {
+      fail(`robots.txt: directive tidak dikenal → ${trimmed}`)
+    }
   }
 }
 
