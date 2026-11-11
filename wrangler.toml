@@ -1,5 +1,0 @@
-# Deploy produksi ke Cloudflare Pages (aset statis + `_headers` cache/keamanan).
-# `bun build.ts` dulu; `wrangler pages deploy` membaca site/ via pages_build_output_dir.
-name = "minilabs"
-pages_build_output_dir = "site"
-compatibility_date = "2026-11-11"

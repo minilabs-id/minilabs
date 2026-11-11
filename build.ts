@@ -432,29 +432,6 @@ write(
   ].join("\n"),
 )
 
-// ── header cache + keamanan (Cloudflare Pages `_headers`) ───────────────
-// Pages tak punya kontrol TTL; `_headers` satu-satunya jalur. HTML harus
-// revalidasi, sedangkan aset berversi boleh `immutable` setahun. Aturan aset
-// men-`! Cache-Control` dulu supaya tidak tergabung (join koma) dengan `/*`.
-const immutable = (paths: string[]): string =>
-  paths
-    .map((p) => `${p}\n  ! Cache-Control\n  Cache-Control: public, max-age=31536000, immutable\n`)
-    .join("\n")
-write(
-  "_headers",
-  `/*
-  Cache-Control: public, max-age=0, must-revalidate
-  X-Content-Type-Options: nosniff
-  X-Frame-Options: SAMEORIGIN
-  Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
-  Cross-Origin-Opener-Policy: same-origin
-  Strict-Transport-Security: max-age=31536000; includeSubDomains
-  Content-Security-Policy: default-src 'self'; img-src 'self' data: https:; media-src 'self' https:; frame-src 'self' https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; font-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'
-
-${immutable(["/fonts/*", "/app.js", "/logo.svg"])}${ogFile ? immutable([`/${ogFile}`]) : ""}`,
-)
-
 // ── aset statis ─────────────────────────────────────────────────────────
 for (const f of ["app.js", "logo.svg", "CNAME", ...(ogFile ? [ogFile] : [])]) {
   cpSync(join(root, f), join(site, f))

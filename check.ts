@@ -29,7 +29,6 @@ const required = [
   "robots.txt",
   "llms.txt",
   ".nojekyll",
-  "_headers",
   "app.js",
   "logo.svg",
   "fonts/space-grotesk-var.woff2",
@@ -170,30 +169,6 @@ for (const file of htmlFiles(site)) {
     if (!/^(User-agent|Allow|Disallow|Sitemap|Crawl-delay):/i.test(trimmed)) {
       fail(`robots.txt: directive tidak dikenal → ${trimmed}`)
     }
-  }
-}
-
-// ── 6. _headers (Cloudflare Pages) ───────────────────────────────────────
-{
-  const headers = readFileSync(join(site, "_headers"), "utf8")
-  const groups = headers
-    .split(/\n\s*\n/)
-    .map((g) => g.split("\n").map((l) => l.trim()).filter(Boolean))
-    .filter((g) => g.length > 1)
-  if (groups.length === 0) fail("_headers: tidak ada aturan")
-  for (const p of ["/fonts/*", "/app.js", "/logo.svg"]) {
-    if (!headers.includes(p)) fail(`_headers: aturan cache aset hilang → ${p}`)
-  }
-  for (const g of groups.filter((g) => g[0] !== "/*")) {
-    if (!g.some((l) => /^Cache-Control:/i.test(l))) continue
-    // Tanpa `! Cache-Control`, nilai aturan `/*` ikut tergabung (jadi dua max-age).
-    if (!g.some((l) => /^!\s*Cache-Control$/i.test(l))) {
-      fail(`_headers: ${g[0]} menimpa Cache-Control tanpa "! Cache-Control"`)
-    }
-    if (!g.some((l) => /immutable/.test(l))) fail(`_headers: ${g[0]} tidak memakai cache immutable`)
-  }
-  for (const h of ["X-Content-Type-Options", "Content-Security-Policy", "Referrer-Policy"]) {
-    if (!headers.includes(h)) fail(`_headers: header keamanan ${h} hilang`)
   }
 }
 

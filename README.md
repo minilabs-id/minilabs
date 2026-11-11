@@ -78,28 +78,24 @@ kanonik dokumen artifact, `capabilities`, `tags`, dan `representativeQueries`
 
 ## Deploy
 
-`.github/workflows/deploy-pages.yml` men-deploy pada push ke `main`, dispatch
-manual, `repository_dispatch` (`update-docs` dari repo proyek), dan jadwal
-harian. Dokumentasi proyek di-cache via `actions/cache` agar tidak selalu klon
-dari nol.
+`.github/workflows/deploy-pages.yml` men-deploy ke **GitHub Pages** pada push ke
+`main`, dispatch manual, `repository_dispatch` (`update-docs` dari repo proyek),
+dan jadwal harian. Dokumentasi proyek di-cache via `actions/cache` agar tidak
+selalu klon dari nol.
 
-Dua target, satu artefak `site/`:
-
-1. **Cloudflare Pages** (`minilabs`) — target utama bila secret
-   `CLOUDFLARE_API_TOKEN` tersedia. Hanya platform ini yang menerapkan
-   [`_headers`](./build.ts) (cache `immutable` untuk aset berversi + header
-   keamanan), karena GitHub Pages tidak mendukung header kustom.
-2. **GitHub Pages** — fallback, selalu berjalan.
-
-Deploy manual:
+Cloudflare dipakai **hanya sebagai CDN** di depan GitHub Pages — bukan host
+alternatif, dan situs tidak dipindahkan. GitHub Pages tidak mendukung header
+kustom (selalu `Cache-Control: max-age=600`), jadi cache panjang diatur lewat
+Cache Rules zona `minilabs.id`. Langkah DNS + setelan: lihat
+[`cloudflare/README.md`](./cloudflare/README.md), lalu:
 
 ```sh
-bun build.ts && bun check.ts
-bunx wrangler@4 pages deploy site --project-name minilabs --branch main
+CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ZONE=minilabs.id bun cloudflare/setup.ts
 ```
 
-Aset (`app.js`, `logo.svg`, font) diberi query `?v=<hash>` oleh build agar
-aman di-cache `immutable` setahun; HTML tetap `must-revalidate`.
+Aset (`app.js`, `logo.svg`, font) diberi query `?v=<hash isi>` oleh build, jadi
+aman di-cache setahun: perubahan berkas otomatis menghasilkan URL baru. HTML
+tidak diberi `?v=` dan tetap revalidasi.
 
 ## Lisensi
 
