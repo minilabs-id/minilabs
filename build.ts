@@ -2,15 +2,22 @@
 // Zero-dependency (node:fs/path). Baca projects.ts + copy.ts → generate site/.
 // Konten proyek (docs) = single source bahasa sumber (Indonesia), dirender sekali
 // di namespace id; chrome situs (hub + halaman proyek) dibuat untuk id dan en.
-import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
+import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { dirname, join } from "node:path"
 import { PROJECTS, type Project } from "./projects.ts"
 import { type DocPage, fetchProjectDocs } from "./docs.ts"
 import { CHROME, LANGS, type Lang } from "./copy.ts"
+import {
+  AI_CATALOG_PATH,
+  ARD_PATH,
+  SITE_BASE as base,
+  buildAiCatalogManifest,
+  buildArdManifest,
+  entryCount,
+} from "./catalog.ts"
 
 const root = import.meta.dir
 const site = join(root, "site")
-const base = "https://minilabs.id"
 
 // Identitas brand (Bahasa Inggris, sama di semua locale).
 const HERO_KICKER = "Independent studio · open source"
@@ -19,14 +26,26 @@ const FOOTER_TAGLINE = "Exploring ideas. Engineering possibilities."
 const statusLabel = { live: "Live", beta: "Beta", planned: "Planned" } as const
 const ORG = "https://github.com/startupmini"
 
+// og:image butuh raster (banyak platform mengabaikan SVG). Pakai `og.*` bila ada,
+// jika tidak jatuh balik ke logo SVG.
+const OG_CANDIDATES = ["og.png", "og.jpg", "og.jpeg", "og.webp"]
+const ogFile = OG_CANDIDATES.find((f) => existsSync(join(root, f)))
+const ogImage = ogFile ? `${base}/${ogFile}` : `${base}/logo.svg`
+
 rmSync(site, { recursive: true, force: true })
 mkdirSync(site, { recursive: true })
 
 function write(rel: string, content: string): void {
   const dest = join(site, rel)
-  mkdirSync(join(dest, ".."), { recursive: true })
+  mkdirSync(dirname(dest), { recursive: true })
   writeFileSync(dest, content, "utf8")
 }
+
+/** Escape untuk simpul teks (konten/copy dianggap teks biasa, bukan HTML). */
+const esc = (s: string): string =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+/** Escape untuk nilai atribut. */
+const escAttr = (s: string): string => esc(s).replace(/"/g, "&quot;")
 
 const prefix = (l: Lang): string => (l === "en" ? "en/" : "")
 const href = (l: Lang, rel: string): string => `/${prefix(l)}${rel}`
@@ -41,8 +60,10 @@ function layout(opts: {
   body: string
   /** true → tampilkan switcher bahasa + hreflang alternates (halaman situs). */
   isSite?: boolean
+  /** true → jangan indeks (mis. 404) + tanpa canonical. */
+  noindex?: boolean
 }): string {
-  const { lang, rel, title, desc, body, isSite = false } = opts
+  const { lang, rel, title, desc, body, isSite = false, noindex = false } = opts
   const canon = `${base}${href(lang, rel)}`
   const alts = isSite
     ? LANGS.map(
@@ -51,33 +72,40 @@ function layout(opts: {
       ).join("\n") + `\n<link rel="alternate" hreflang="x-default" href="${base}${href("id", rel)}" />`
     : ""
   const htmlLang = LANGS.find((L) => L.code === lang)?.htmlLang ?? "id"
+  const t = CHROME[lang]
   return `<!DOCTYPE html>
 <html lang="${htmlLang}">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>${title}</title>
-<meta name="description" content="${desc}" />
-<link rel="canonical" href="${canon}" />
+<title>${escAttr(title)}</title>
+<meta name="description" content="${escAttr(desc)}" />
+${noindex ? `<meta name="robots" content="noindex" />\n` : ""}<link rel="canonical" href="${canon}" />
 ${alts}
+<link rel="ard" href="${ARD_PATH}" />
+<link rel="ai-catalog" href="${AI_CATALOG_PATH}" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="MiniLabs" />
-<meta property="og:title" content="${title}" />
-<meta property="og:description" content="${desc}" />
+<meta property="og:locale" content="${htmlLang === "en" ? "en_US" : "id_ID"}" />
+<meta property="og:title" content="${escAttr(title)}" />
+<meta property="og:description" content="${escAttr(desc)}" />
 <meta property="og:url" content="${canon}" />
-<meta property="og:image" content="${base}/logo.svg" />
-<meta name="twitter:card" content="summary" />
-<meta name="twitter:title" content="${title}" />
-<meta name="twitter:description" content="${desc}" />
+<meta property="og:image" content="${ogImage}" />
+<meta property="og:image:alt" content="${escAttr(t.ogImageAlt)}" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="${escAttr(title)}" />
+<meta name="twitter:description" content="${escAttr(desc)}" />
+<meta name="twitter:image" content="${ogImage}" />
 <meta name="theme-color" content="#f6f5f0" />
 <link rel="icon" type="image/svg+xml" href="/logo.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/styles.css" />
+<script>document.documentElement.classList.add("js")</script>
 </head>
 <body>
-<a class="skip-link" href="#main">${lang === "en" ? "Skip to content" : "Lewati ke konten"}</a>
+<a class="skip-link" href="#main">${esc(t.skipLink)}</a>
 <div class="page">
 ${header(lang, rel, isSite)}
 <main id="main">${body}</main>
@@ -91,20 +119,20 @@ ${footer()}
 function header(lang: Lang, rel: string, showLang: boolean): string {
   const t = CHROME[lang]
   const switcher = showLang
-    ? `<span class="lang-switch" aria-label="Language">
+    ? `<nav class="lang-switch" aria-label="${escAttr(t.langLabel)}">
         ${LANGS.map((L) => {
-          const active = L.code === lang ? " is-active" : ""
-          return `<a class="lang${active}" href="${href(L.code, rel)}" hreflang="${L.code}">${L.label}</a>`
+          const active = L.code === lang
+          return `<a class="lang${active ? " is-active" : ""}" href="${href(L.code, rel)}" hreflang="${L.code}"${active ? ' aria-current="page"' : ""}>${L.label}</a>`
         }).join("")}
-      </span>`
+      </nav>`
     : ""
   return `<header class="site-header">
-  <a class="brand" href="${homeUrl(lang)}" aria-label="MiniLabs — beranda">
+  <a class="brand" href="${homeUrl(lang)}" aria-label="${escAttr(t.brandLabel)}">
     <img src="/logo.svg" alt="MiniLabs" class="logo" width="1536" height="1024" />
   </a>
-  <nav class="nav" aria-label="Navigasi utama">
-    <a href="${homeUrl(lang)}#proyek">${t.navProjects}</a>
-    <a href="${homeUrl(lang)}#tentang">${t.navAbout}</a>
+  <nav class="nav" aria-label="${escAttr(t.navLabel)}">
+    <a href="${homeUrl(lang)}#proyek">${esc(t.navProjects)}</a>
+    <a href="${homeUrl(lang)}#tentang">${esc(t.navAbout)}</a>
     ${switcher}
   </nav>
 </header>`
@@ -128,43 +156,43 @@ function detailSections(p: Project, lang: Lang): string {
       .map(
         (s) => `
         <li class="step">
-          <span class="step__label">${s.label}</span>
-          ${s.command ? `<pre class="step__code"><code>${s.command}</code></pre>` : ""}
+          <span class="step__label">${esc(s.label)}</span>
+          ${s.command ? `<pre class="step__code"><code>${esc(s.command)}</code></pre>` : ""}
         </li>`,
       )
       .join("")
-    const note = c.installNote ? `<p class="step__note">${c.installNote}</p>` : ""
+    const note = c.installNote ? `<p class="step__note">${esc(c.installNote)}</p>` : ""
     sections.push({
-      id: "instalasi",
+      id: t.anchorInstall,
       title: t.installTitle,
-      body: `<p class="pblock__intro">${t.installIntro}</p><ol class="steps">${steps}</ol>${note}`,
+      body: `<p class="pblock__intro">${esc(t.installIntro)}</p><ol class="steps">${steps}</ol>${note}`,
     })
   } else if (c.plannedNote) {
     sections.push({
-      id: "status",
+      id: t.anchorStatus,
       title: t.statusTitle,
-      body: `<p class="planned-note">${c.plannedNote}</p>`,
+      body: `<p class="planned-note">${esc(c.plannedNote)}</p>`,
     })
   }
 
   if (c.highlights && c.highlights.length) {
     const isLive = p.status === "live"
     sections.push({
-      id: isLive ? "kemampuan" : "rencana",
+      id: isLive ? t.anchorCapabilities : t.anchorRoadmap,
       title: isLive ? t.capabilitiesTitle : t.roadmapTitle,
-      body: `<ul class="highlights">${c.highlights.map((h) => `<li>${h}</li>`).join("")}</ul>`,
+      body: `<ul class="highlights">${c.highlights.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>`,
     })
   }
 
   if (p.repo) {
     const docsHref = `${href("id", `projects/${p.slug}/docs/`)}` // docs = single source (id)
     sections.push({
-      id: "sumber",
+      id: t.anchorSource,
       title: t.sourceTitle,
-      body: `<p class="pblock__intro">${t.sourceIntro}</p>
+      body: `<p class="pblock__intro">${esc(t.sourceIntro)}</p>
         <p class="project__links">
-          <a class="btn" href="https://github.com/${p.repo}" rel="noopener">${t.githubCta}</a>
-          <a class="btn btn--ghost" href="${docsHref}">${t.docsCta}${t.docsCtaNote}</a>
+          <a class="btn" href="https://github.com/${p.repo}" rel="noopener">${esc(t.githubCta)}</a>
+          <a class="btn btn--ghost" href="${docsHref}">${esc(t.docsCta)}${esc(t.docsCtaNote)}</a>
         </p>`,
     })
   }
@@ -172,8 +200,8 @@ function detailSections(p: Project, lang: Lang): string {
   return sections
     .map(
       (s, i) => `
-    <section class="pblock" id="${s.id}">
-      <h2 class="pblock__title"><span class="pblock__index">${String(i + 1).padStart(2, "0")}</span>${s.title}</h2>
+    <section class="pblock" id="${escAttr(s.id)}">
+      <h2 class="pblock__title"><span class="pblock__index">${String(i + 1).padStart(2, "0")}</span>${esc(s.title)}</h2>
       ${s.body}
     </section>`,
     )
@@ -181,10 +209,13 @@ function detailSections(p: Project, lang: Lang): string {
 }
 
 const urls: string[] = []
+/** Tautan dokumentasi bertajuk (untuk llms.txt) — judul lebih berguna daripada URL telanjang. */
+const docLinks: string[] = []
 
 // ── Hub + halaman detail (id + en) ──────────────────────────────────────
 const liveCount = PROJECTS.filter((p) => p.status === "live").length
 const plannedCount = PROJECTS.length - liveCount
+const featured = PROJECTS.find((p) => p.status === "live" && p.repo) ?? PROJECTS[0]!
 
 for (const L of LANGS) {
   const lang = L.code
@@ -196,60 +227,65 @@ for (const L of LANGS) {
     (p) => `
   <a class="card" href="${href(lang, `projects/${p.slug}/`)}">
     <div class="card__head">
-      <span class="card__name">${p.name}</span>
+      <span class="card__name">${esc(p.name)}</span>
       <span class="status status--${p.status}">${statusLabel[p.status]}</span>
     </div>
-    <p class="card__tagline">${p.content[lang].tagline}</p>
+    <p class="card__tagline">${esc(p.content[lang].tagline)}</p>
   </a>`,
   ).join("\n")
 
-  const aboutMeta = t.aboutMeta
-    .replace("{total}", String(PROJECTS.length))
-    .replace("{live}", String(liveCount))
-    .replace("{planned}", String(plannedCount))
+  const aboutMeta = esc(
+    t.aboutMeta
+      .replace("{total}", String(PROJECTS.length))
+      .replace("{live}", String(liveCount))
+      .replace("{planned}", String(plannedCount)),
+  )
 
   const hubBody = `
   <section class="hero" id="top">
     <p class="hero__kicker" data-reveal>${HERO_KICKER}</p>
     <h1 class="hero-title">${HERO_TITLE}</h1>
-    <p class="hero-sub" data-reveal>${t.heroSub}</p>
+    <p class="hero-sub" data-reveal>${esc(t.heroSub)}</p>
     <div class="hero__cta" data-reveal>
-      <a class="btn" href="${href(lang, "projects/minicode/")}">${t.heroCtaPrimary}</a>
-      <a class="btn btn--ghost" href="#proyek">${t.heroCtaSecondary}</a>
+      <a class="btn" href="${href(lang, `projects/${featured.slug}/`)}">${esc(t.heroCtaPrimary)}</a>
+      <a class="btn btn--ghost" href="#proyek">${esc(t.heroCtaSecondary)}</a>
     </div>
   </section>
-  <section class="section" id="proyek" aria-label="${t.projectsLabel}">
+  <section class="section" id="proyek" aria-label="${escAttr(t.projectsLabel)}">
     <div class="section__aside">
       <span class="section__index">01</span>
-      <span class="section__label">${t.projectsLabel}</span>
+      <span class="section__label">${esc(t.projectsLabel)}</span>
     </div>
     <div class="section__body">
-      <h2 class="section__title">${t.projectsTitle}</h2>
+      <h2 class="section__title">${esc(t.projectsTitle)}</h2>
       <div class="grid">${cards}</div>
     </div>
   </section>
-  <section class="section" id="tentang" aria-label="${t.aboutLabel}">
+  <section class="section" id="tentang" aria-label="${escAttr(t.aboutLabel)}">
     <div class="section__aside">
       <span class="section__index">02</span>
-      <span class="section__label">${t.aboutLabel}</span>
+      <span class="section__label">${esc(t.aboutLabel)}</span>
     </div>
     <div class="section__body">
-      <h2 class="section__title">${t.aboutTitle}</h2>
+      <h2 class="section__title">${esc(t.aboutTitle)}</h2>
       <div class="editorial" data-reveal>
-        <p>${t.aboutP1}</p>
-        <p>${t.aboutP2}</p>
+        <p>${esc(t.aboutP1)}</p>
+        <p>${esc(t.aboutP2)}</p>
       </div>
       <ol class="principles" data-reveal>
-        ${t.aboutPrinciples.map((pr) => `<li>${pr}</li>`).join("")}
+        ${t.aboutPrinciples.map((pr) => `<li>${esc(pr)}</li>`).join("")}
       </ol>
       <p class="about__meta">${aboutMeta}</p>
       <p class="about__cta">
-        <a class="btn" href="${ORG}" rel="noopener">${t.aboutCta}</a>
+        <a class="btn" href="${ORG}" rel="noopener">${esc(t.aboutCta)}</a>
       </p>
     </div>
   </section>`
 
-  write(`${prefix(lang)}index.html`, layout({ lang, rel: "", title: t.homeTitle, desc: t.homeDesc, body: hubBody, isSite: true }))
+  write(
+    `${prefix(lang)}index.html`,
+    layout({ lang, rel: "", title: t.homeTitle, desc: t.homeDesc, body: hubBody, isSite: true }),
+  )
   urls.push(`${base}${href(lang, "")}`)
 
   // Detail per proyek
@@ -258,17 +294,17 @@ for (const L of LANGS) {
     const rel = `projects/${p.slug}/`
     const detailBody = `
     <article class="project">
-      <a class="back" href="${home}">${t.backToLabs}</a>
+      <a class="back" href="${home}">${esc(t.backToLabs)}</a>
       <header class="project__hero">
-        <span class="project__eyebrow">${t.projectEyebrow} ${String(index + 1).padStart(2, "0")}</span>
+        <span class="project__eyebrow">${esc(t.projectEyebrow)} ${String(index + 1).padStart(2, "0")}</span>
         <div class="project__title-row">
-          <h1 class="project__name">${p.name}</h1>
+          <h1 class="project__name">${esc(p.name)}</h1>
           <span class="status status--${p.status}">${statusLabel[p.status]}</span>
         </div>
-        <p class="project__tagline">${c.tagline}</p>
+        <p class="project__tagline">${esc(c.tagline)}</p>
       </header>
       <div class="project__lede" data-reveal>
-        <p>${c.overview}</p>
+        <p>${esc(c.overview)}</p>
       </div>
       ${detailSections(p, lang)}
     </article>`
@@ -285,6 +321,7 @@ for (const p of PROJECTS) {
   if (!p.repo) continue
   const pages = await fetchProjectDocs({
     repo: p.repo,
+    slug: p.slug,
     docsDir: "docs",
     cacheDir: join(root, ".docs-cache"),
   })
@@ -294,10 +331,10 @@ for (const p of PROJECTS) {
   const docsRel = `projects/${p.slug}/docs/`
   const docsIndexBody = `
     <article class="project project--docs">
-      <a class="back" href="${homeUrl("id")}">← MiniLabs</a>
-      <h1 class="project__name project__name--doc">${p.name} — ${t.docsIndexTitle}</h1>
+      <a class="back" href="${homeUrl("id")}">${esc(t.backToLabs)}</a>
+      <h1 class="project__name project__name--doc">${esc(p.name)} — ${esc(t.docsIndexTitle)}</h1>
       <ul class="doclist">
-        ${pages.map((d) => `<li><a href="${href("id", `${docsRel}${d.name}/`)}">${d.title}</a></li>`).join("\n")}
+        ${pages.map((d) => `<li><a href="${href("id", `${docsRel}${d.name}/`)}">${esc(d.title)}</a></li>`).join("\n")}
       </ul>
     </article>`
   write(
@@ -310,8 +347,8 @@ for (const p of PROJECTS) {
     const rel = `${docsRel}${d.name}/`
     const docBody = `
       <article class="project project--docs">
-        <a class="back" href="${href("id", docsRel)}">${t.docsBack}</a>
-        <h1 class="project__name project__name--doc">${d.title}</h1>
+        <a class="back" href="${href("id", docsRel)}">${esc(t.docsBack)}</a>
+        <h1 class="project__name project__name--doc">${esc(d.title)}</h1>
         <div class="docs">${d.html}</div>
       </article>`
     write(
@@ -319,20 +356,43 @@ for (const p of PROJECTS) {
       layout({ lang: "id", rel, title: `${d.title} — ${p.name}`, desc: `${t.docsIndexTitle} ${p.name}: ${d.title}.`, body: docBody }),
     )
     urls.push(`${base}${href("id", rel)}`)
+    docLinks.push(`- [${p.name}: ${d.title}](${base}${href("id", rel)})`)
   }
 }
 
+// ── Manifest discovery ARD (Agentic Resource Discovery) ─────────────────
+// Path kanonik + path pendahulu (lihat catalog.ts).
+write(ARD_PATH.replace(/^\//, ""), buildArdManifest())
+write(AI_CATALOG_PATH.replace(/^\//, ""), buildAiCatalogManifest())
+
+// ── 404 ─────────────────────────────────────────────────────────────────
+{
+  const t = CHROME.id
+  const body = `
+    <article class="project project--docs">
+      <h1 class="project__name project__name--doc">${esc(t.notFoundHeading)}</h1>
+      <p class="planned-note">${esc(t.notFoundBody)}</p>
+      <p class="project__links">
+        <a class="btn" href="/">${esc(t.notFoundCta)}</a>
+        <a class="btn btn--ghost" href="/en/">English</a>
+      </p>
+    </article>`
+  write(
+    "404.html",
+    layout({ lang: "id", rel: "404.html", title: t.notFoundTitle, desc: t.notFoundBody, body, noindex: true }),
+  )
+}
+
 // ── sitemap + robots + llms ─────────────────────────────────────────────
-const now = new Date().toISOString().slice(0, 10)
 write(
   "sitemap.xml",
   `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
-    urls.map((u) => `<url><loc>${u}</loc><lastmod>${now}</lastmod></url>`).join("") +
+    urls.map((u) => `<url><loc>${u}</loc></url>`).join("") +
     `</urlset>`,
 )
 write(
   "robots.txt",
-  `User-agent: *\nAllow: /\n\nSitemap: ${base}/sitemap.xml\n`,
+  `User-agent: *\nAllow: /\n\n# ARD (Agentic Resource Discovery) entry source.\nAgentmap: ${base}${ARD_PATH}\n\nSitemap: ${base}/sitemap.xml\n`,
 )
 write(
   "llms.txt",
@@ -344,14 +404,21 @@ write(
     "## Projects",
     ...PROJECTS.map((p) => `- [${p.name}](${base}${href("id", `projects/${p.slug}/`)}): ${p.content.id.tagline}`),
     ...PROJECTS.map((p) => `- [${p.name} (EN)](${base}${href("en", `projects/${p.slug}/`)}): ${p.content.en.tagline}`),
-    ...urls.filter((u) => u.includes("/docs/")).map((u) => `- [Documentation](${u})`),
+    ...docLinks,
+    "",
+    "## Discovery",
+    `- [ARD manifest](${base}${ARD_PATH})`,
+    `- [AI catalog](${base}${AI_CATALOG_PATH})`,
     "",
   ].join("\n"),
 )
 
 // ── aset statis ─────────────────────────────────────────────────────────
-for (const f of ["styles.css", "app.js", "logo.svg", "CNAME"]) {
+for (const f of ["styles.css", "app.js", "logo.svg", "CNAME", ...(ogFile ? [ogFile] : [])]) {
   cpSync(join(root, f), join(site, f))
 }
+write(".nojekyll", "")
 
-console.log(`[minilabs-build] ${urls.length} halaman -> site/`)
+console.log(
+  `[minilabs-build] ${urls.length} halaman + ${entryCount()} entri ARD -> site/`,
+)

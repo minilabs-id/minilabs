@@ -8,7 +8,7 @@
   --bg-soft: #fbfaf7;
   --ink: #121212;
   --ink-soft: #2e2e2e;
-  --muted: #76766f;
+  --muted: #6e6e66;
   --line: #e5e3dc;
 
   --font-display: "Space Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -396,7 +396,7 @@ a {
 }
 
 .status--planned {
-  border-color: var(--line);
+  border-color: var(--muted);
   color: var(--muted);
 }
 
@@ -711,6 +711,34 @@ a {
   margin-top: 1.5rem;
 }
 
+.docs h1 {
+  color: var(--ink);
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+  margin-top: 2rem;
+}
+
+.docs h4,
+.docs h5,
+.docs h6 {
+  color: var(--ink);
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  margin-top: 1.25rem;
+}
+
+.docs a {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+}
+
+.docs img {
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  margin: 0.5rem 0;
+}
+
 .docs p {
   line-height: 1.7;
 }
@@ -795,14 +823,15 @@ a {
 }
 
 /* Reveal motion -------------------------------------------------------------- */
-[data-reveal] {
+/* Hanya aktif saat JS tersedia (html.js) — tanpa JS konten tetap terlihat. */
+.js [data-reveal] {
   opacity: 0;
   transform: translateY(18px);
   transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
   transition-delay: var(--d, 0s);
 }
 
-[data-reveal].is-visible {
+.js [data-reveal].is-visible {
   opacity: 1;
   transform: none;
 }
@@ -820,7 +849,7 @@ a {
     transition-duration: 0.01ms !important;
   }
 
-  [data-reveal] {
+  .js [data-reveal] {
     opacity: 1;
     transform: none;
   }

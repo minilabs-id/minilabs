@@ -1,6 +1,7 @@
 // Salinan chrome antarmuka (non-konten proyek) per bahasa.
 // `<html lang>`, navigasi, hero, section, footer, label seksi detail, dan meta.
 // konten proyek (tagline/overview/dst) terlokalisasi terpisah di projects.ts.
+// Semua nilai di sini adalah TEKS BIASA (tanpa HTML) — build.ts meng-escape-nya.
 
 export type Lang = "id" | "en"
 
@@ -20,6 +21,14 @@ export const LANGS: LangMeta[] = [
 export interface SiteCopy {
   navProjects: string
   navAbout: string
+  /** aria-label tautan logo. */
+  brandLabel: string
+  /** aria-label navigasi utama. */
+  navLabel: string
+  /** aria-label pemilih bahasa. */
+  langLabel: string
+  /** Teks skip-link. */
+  skipLink: string
   heroSub: string
   heroCtaPrimary: string
   heroCtaSecondary: string
@@ -49,12 +58,29 @@ export interface SiteCopy {
   docsBack: string
   homeTitle: string
   homeDesc: string
+  /** alt untuk og:image / twitter:image. */
+  ogImageAlt: string
+  // 404
+  notFoundTitle: string
+  notFoundHeading: string
+  notFoundBody: string
+  notFoundCta: string
+  // Anchor id seksi halaman detail (dilokalisasi agar konsisten dengan <html lang>).
+  anchorInstall: string
+  anchorCapabilities: string
+  anchorRoadmap: string
+  anchorStatus: string
+  anchorSource: string
 }
 
 export const CHROME: Record<Lang, SiteCopy> = {
   id: {
     navProjects: "Proyek",
     navAbout: "Tentang",
+    brandLabel: "MiniLabs — beranda",
+    navLabel: "Navigasi utama",
+    langLabel: "Bahasa",
+    skipLink: "Lewati ke konten",
     heroSub:
       "Studio independen yang membangun alat open source yang fokus — dari coding agent hingga CMS.",
     heroCtaPrimary: "Jelajahi MiniCode →",
@@ -92,10 +118,24 @@ export const CHROME: Record<Lang, SiteCopy> = {
     homeTitle: "MiniLabs — Exploring ideas. Engineering possibilities.",
     homeDesc:
       "MiniLabs adalah studio independen yang membangun alat open source yang fokus — MiniCode (coding agent), MiniBug, MiniBot, MiniWord.",
+    ogImageAlt: "MiniLabs — studio open source independen",
+    notFoundTitle: "404 — Halaman tidak ditemukan",
+    notFoundHeading: "Halaman tidak ditemukan",
+    notFoundBody: "Tautan yang Anda buka mungkin sudah dipindahkan atau tidak pernah ada.",
+    notFoundCta: "Kembali ke beranda",
+    anchorInstall: "instalasi",
+    anchorCapabilities: "kemampuan",
+    anchorRoadmap: "rencana",
+    anchorStatus: "status",
+    anchorSource: "sumber",
   },
   en: {
     navProjects: "Projects",
     navAbout: "About",
+    brandLabel: "MiniLabs — home",
+    navLabel: "Main navigation",
+    langLabel: "Language",
+    skipLink: "Skip to content",
     heroSub: "An independent studio building focused open-source tools — from coding agents to CMS.",
     heroCtaPrimary: "Explore MiniCode →",
     heroCtaSecondary: "All projects",
@@ -132,5 +172,15 @@ export const CHROME: Record<Lang, SiteCopy> = {
     homeTitle: "MiniLabs — Exploring ideas. Engineering possibilities.",
     homeDesc:
       "MiniLabs is an independent studio building focused open-source tools — MiniCode (coding agent), MiniBug, MiniBot, MiniWord.",
+    ogImageAlt: "MiniLabs — an independent open-source studio",
+    notFoundTitle: "404 — Page not found",
+    notFoundHeading: "Page not found",
+    notFoundBody: "The link you followed may have moved, or may never have existed.",
+    notFoundCta: "Back to home",
+    anchorInstall: "install",
+    anchorCapabilities: "capabilities",
+    anchorRoadmap: "roadmap",
+    anchorStatus: "status",
+    anchorSource: "source",
   },
 }

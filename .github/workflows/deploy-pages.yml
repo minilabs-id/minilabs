@@ -24,13 +24,27 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.3
+      # Cache klon docs agar build tidak selalu fetch dari nol; kunci berubah
+      # tiap run tapi restore-key menahan salinan terakhir untuk di-`git pull`.
+      - name: Cache project docs
+        uses: actions/cache@v4
+        with:
+          path: .docs-cache
+          key: docs-cache-${{ github.run_id }}
+          restore-keys: |
+            docs-cache-
       - name: Build site
         run: bun build.ts
+      - name: Validate output
+        run: bun check.ts
       - uses: actions/upload-pages-artifact@v3
         with:
           path: "site"
@@ -41,6 +55,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

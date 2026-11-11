@@ -1,3 +1,15 @@
+# hasil build & cache
 site/
-node_modules/
 .docs-cache/
+node_modules/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# env & log
+.env
+.env.local
+*.log

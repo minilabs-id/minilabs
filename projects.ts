@@ -22,12 +22,37 @@ export interface ProjectL10n {
   plannedNote?: string
 }
 
+/**
+ * Deklarasi discovery ARD (Agentic Resource Discovery) untuk sebuah proyek.
+ * Dipakai `catalog.ts` untuk membangun `.well-known/ard.json` + `ai-catalog.json`.
+ * Hanya proyek yang benar-benar bisa dipakai boleh punya `discovery` — proyek
+ * `planned` sengaja dibiarkan tanpa ini agar registry tidak mengindeks resource
+ * yang belum ada.
+ */
+export interface ProjectDiscovery {
+  /** Segmen namespace URN, mis. "agent" → urn:air:minilabs.id:agent:<slug>. */
+  namespace: string
+  /** IANA media type dari dokumen artifact (lihat §3.3 spesifikasi ARD). */
+  type: string
+  /** URL kanonik ke dokumen artifact. */
+  url: string
+  /** Token skill/tool untuk filter terstruktur. */
+  capabilities: string[]
+  /** Kata kunci untuk faceting. */
+  tags: string[]
+  /** 2–5 contoh query natural-language (sinyal indeks semantik). */
+  representativeQueries: string[]
+  /** Pasangan kunci-nilai bebas. */
+  metadata?: Record<string, string | number | boolean | null>
+}
+
 export interface Project {
   slug: string
   name: string
   status: ProjectStatus
   repo?: string
   content: Record<Lang, ProjectL10n>
+  discovery?: ProjectDiscovery
 }
 
 export const PROJECTS: Project[] = [
@@ -36,6 +61,30 @@ export const PROJECTS: Project[] = [
     name: "MiniCode",
     status: "live",
     repo: "startupmini/minicode",
+    discovery: {
+      namespace: "agent",
+      type: "application/agent-card+json",
+      url: "https://github.com/startupmini/minicode",
+      capabilities: [
+        "CodeEditing",
+        "ShellCommandExecution",
+        "RepositoryAnalysis",
+        "SubAgents",
+        "MCPClient",
+        "LSP",
+      ],
+      tags: ["coding-agent", "cli", "terminal", "open-source", "bun", "agentic"],
+      representativeQueries: [
+        "find an open-source coding agent CLI for the terminal",
+        "install a Bun-based coding agent that gates sensitive actions behind permissions",
+        "run a headless coding agent in CI with a machine-readable JSONL stream",
+      ],
+      metadata: {
+        status: "live",
+        install: "npm install -g minicode-ai",
+        docs: "https://minilabs.id/projects/minicode/docs/",
+      },
+    },
     content: {
       id: {
         tagline:
