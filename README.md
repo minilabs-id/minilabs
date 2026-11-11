@@ -86,8 +86,22 @@ selalu klon dari nol.
 Cloudflare dipakai **hanya sebagai CDN** di depan GitHub Pages — bukan host
 alternatif, dan situs tidak dipindahkan. GitHub Pages tidak mendukung header
 kustom (selalu `Cache-Control: max-age=600`), jadi cache panjang diatur lewat
-Cache Rules zona `minilabs.id`. Langkah DNS + setelan: lihat
-[`cloudflare/README.md`](./cloudflare/README.md), lalu:
+Cache Rules zona `minilabs.id`.
+
+Tutorial lengkap langkah-demi-langkah (Add a site → ganti NS di Hostinger →
+proxy DNS → SSL strict → Cache Rules → verifikasi): baca
+**[`cloudflare/README.md`](./cloudflare/README.md)**. Ringkasnya:
+
+1. Cloudflare dashboard → **Add a site** `minilabs.id` (Free) → catat 2 NS.
+2. Hostinger hPanel → **DNS / Nameservers** → ganti `byte/pixel.dns-parking.com`
+   dengan NS Cloudflare; tunggu zona **Active**.
+3. Cloudflare → **DNS → Records**: pastikan 4 record `A` `@` →
+   `185.199.108–111.153` semuanya **Proxied** (awan oranye).
+4. **SSL/TLS → Overview**: mode **Full (strict)** + **Always Use HTTPS**.
+5. **Rules → Cache Rules**: aset `/fonts/*`, `/app.js`, `/logo.svg` →
+   Edge + Browser TTL **1 year** (ekspresi siap-tempel ada di tutorial).
+
+Langkah 5 juga bisa lewat script idempoten:
 
 ```sh
 CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ZONE=minilabs.id bun cloudflare/setup.ts
