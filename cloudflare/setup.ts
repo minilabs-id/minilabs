@@ -1,31 +1,49 @@
 // Setup Cloudflare CDN untuk GitHub Pages — idempoten, aman dijalankan ulang.
 //
 //   CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ZONE=minilabs.id bun cloudflare/setup.ts
+//   ... bun cloudflare/setup.ts --dry-run    # cetak rencana, tanpa mengubah apa pun
 //
-// Token butuh: Zone → Cache Rules → Edit, Zone → Zone Settings → Edit.
-// (Zone → Read juga, untuk resolusi ID zona.)
+// Token butuh izin:
+//   Zone → Cache Rules → Edit
+//   Zone → Zone Settings → Edit
+//   Zone → Zone → Read            (resolusi ID zona)
 //
-// Yang diatur: Cache Rules (aset immutable, HTML ikut origin), Brotli, HTTP/3,
-// Always Use HTTPS, HSTS, Early Hints, dan redirect www → apex.
-// DNS/nameserver TIDAK disentuh — itu langkah manual sekali jalan (lihat README).
+// Yang diubah: Cache Rule aset (TTL 1 tahun) + setelan Brotli/HTTP3/HTTPS/HSTS/
+// Early Hints. DNS dan nameserver TIDAK disentuh — itu langkah manual sekali
+// jalan, lihat cloudflare/README.md.
 
 const API = "https://api.cloudflare.com/client/v4"
 
 const token = process.env.CLOUDFLARE_API_TOKEN
 const zoneName = process.env.CLOUDFLARE_ZONE ?? "minilabs.id"
+const dryRun = process.argv.includes("--dry-run")
 
 if (!token) {
-  console.error("CLOUDFLARE_API_TOKEN belum diset. Lihat cloudflare/README.md.")
+  console.error("[cdn] CLOUDFLARE_API_TOKEN belum diset. Lihat cloudflare/README.md.")
   process.exit(1)
 }
 
 const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
 
+class ApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly path: string,
+    readonly detail: string,
+  ) {
+    super(`${path} → ${status} ${detail}`)
+  }
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API}${path}`, { ...init, headers })
-  const body = (await res.json()) as { success: boolean; result: T; errors?: Array<{ message: string }> }
+  const body = (await res.json()) as {
+    success: boolean
+    result: T
+    errors?: Array<{ message: string }>
+  }
   if (!res.ok || !body.success) {
-    throw new Error(`${init?.method ?? "GET"} ${path} → ${res.status} ${JSON.stringify(body.errors)}`)
+    throw new ApiError(res.status, path, JSON.stringify(body.errors ?? []))
   }
   return body.result
 }
@@ -36,15 +54,31 @@ interface Zone {
   name: string
   status: string
 }
+
 const zones = await call<Zone[]>(`/zones?name=${encodeURIComponent(zoneName)}`)
 const zone = zones[0]
 if (!zone) {
-  console.error(`Zona ${zoneName} tidak ada di akun ini. Pindahkan DNS ke Cloudflare dulu (cloudflare/README.md).`)
+  console.error(
+    `[cdn] Zona ${zoneName} belum ada di akun ini.\n` +
+      `      Pindahkan nameserver domain ke Cloudflare dulu — lihat cloudflare/README.md.`,
+  )
   process.exit(1)
 }
 console.log(`[cdn] zona ${zone.name} (${zone.id}) status=${zone.status}`)
 
-// ── Cache Rules ─────────────────────────────────────────────────────────
+// ── Cache Rule untuk aset ───────────────────────────────────────────────
+// Hanya aset yang punya `?v=<hash>` (atau semua isi /fonts/) yang boleh 1 tahun:
+// URL-nya berubah bila isi berkas berubah, jadi tidak ada risiko basi.
+// HTML dan berkas lain dibiarkan pada perilaku default (Cloudflare tidak
+// meng-cache HTML; GitHub Pages sudah punya cache 600 detik sendiri).
+const LONG = 31_536_000
+const DESCRIPTION = "MiniLabs: aset immutable (fonts, app.js, logo, og)"
+const EXPRESSION =
+  `(starts_with(http.request.uri.path, "/fonts/")) or ` +
+  `(http.request.uri.path eq "/app.js") or ` +
+  `(http.request.uri.path eq "/logo.svg") or ` +
+  `(http.request.uri.path matches "^/og\\.(png|jpe?g|webp)$")`
+
 interface CacheRule {
   id?: string
   description?: string
@@ -52,86 +86,80 @@ interface CacheRule {
   action: "set_cache_settings"
   action_parameters: {
     cache: boolean
-    edge_ttl: { mode: "override_origin" | "respect_origin"; default: number }
-    browser_ttl?: { mode: "override_origin"; default: number }
+    edge_ttl: { mode: "override_origin"; default: number }
+    browser_ttl: { mode: "override_origin"; default: number }
   }
   enabled: boolean
 }
 
-const LONG = 31_536_000 // 1 tahun
-const HTML_TTL = 600 // sama dengan origin GitHub Pages
-
-// Urutan penting: aturan aset lebih spesifik, jadi didaftarkan lebih dulu.
-const wanted: CacheRule[] = [
-  {
-    description: "MiniLabs: aset immutable (fonts, app.js, logo, og)",
-    // `?v=<hash>` menjamin perubahan berkas = URL baru, jadi aman 1 tahun.
-    expression:
-      `(starts_with(http.request.uri.path, "/fonts/")) or ` +
-      `(http.request.uri.path eq "/app.js") or ` +
-      `(http.request.uri.path eq "/logo.svg") or ` +
-      `(http.request.uri.path matches "^/og\\.(png|jpe?g|webp)$")`,
-    action: "set_cache_settings",
-    action_parameters: {
-      cache: true,
-      edge_ttl: { mode: "override_origin", default: LONG },
-      browser_ttl: { mode: "override_origin", default: LONG },
-    },
-    enabled: true,
+const rule: CacheRule = {
+  description: DESCRIPTION,
+  expression: EXPRESSION,
+  action: "set_cache_settings",
+  action_parameters: {
+    cache: true,
+    edge_ttl: { mode: "override_origin", default: LONG },
+    browser_ttl: { mode: "override_origin", default: LONG },
   },
-  {
-    description: "MiniLabs: HTML revalidasi (edge ikut origin)",
-    expression:
-      `(http.request.uri.path eq "/") or ` +
-      `(ends_with(http.request.uri.path, "/")) or ` +
-      `(http.request.uri.path matches "^/(.*\\.html)$")`,
-    action: "set_cache_settings",
-    action_parameters: {
-      cache: true,
-      edge_ttl: { mode: "override_origin", default: HTML_TTL },
-      browser_ttl: { mode: "override_origin", default: 0 },
-    },
-    enabled: true,
-  },
-]
+  enabled: true,
+}
 
 const entrypoint = `/zones/${zone.id}/rulesets/phases/http_request_cache_settings/entrypoint`
+
 interface Ruleset {
   id: string
   rules: CacheRule[]
 }
 
-let current: Ruleset | null = null
+let existing: CacheRule[] = []
 try {
-  current = await call<Ruleset>(entrypoint)
+  existing = (await call<Ruleset>(entrypoint)).rules ?? []
 } catch (err) {
-  // 404 = belum ada ruleset fase ini; buat baru lewat PUT.
-  if (!String(err).includes("404")) throw err
+  // 404 = fase ini belum punya ruleset; 403 = token tanpa izin Cache Rules.
+  if (err instanceof ApiError && err.status === 403) {
+    console.error(
+      `[cdn] token tidak punya izin Cache Rules (403).\n` +
+        `      Tambahkan scope "Zone → Cache Rules → Edit" pada token, atau setel\n` +
+        `      Cache Rule manual di dashboard (lihat cloudflare/README.md).`,
+    )
+    process.exit(1)
+  }
+  if (!(err instanceof ApiError && err.status === 404)) throw err
 }
 
-const existing = current?.rules ?? []
-const byDescription = new Map(existing.map((r) => [r.description, r]))
-// Pertahankan aturan yang bukan milik script ini.
-const foreign = existing.filter((r) => !r.description?.startsWith("MiniLabs:"))
-const merged = [...wanted, ...foreign].map((r) => {
-  const prev = byDescription.get(r.description)
-  return prev ? { ...prev, ...r, id: prev.id } : r
-})
+const isOurs = (r: CacheRule) => r.description?.startsWith("MiniLabs:")
+const mine = existing.find(isOurs)
+const others = existing.filter((r) => !isOurs(r))
+const merged = [...(mine ? [{ ...mine, ...rule, id: mine.id }] : [rule]), ...others]
 
-await call(entrypoint, {
-  method: "PUT",
-  body: JSON.stringify({ rules: merged }),
-})
-console.log(`[cdn] cache rules: ${wanted.length} diatur, ${foreign.length} aturan lain dipertahankan`)
+if (dryRun) {
+  console.log("[cdn] --dry-run, tidak ada perubahan. Cache rules yang akan dikirim:")
+  console.log(JSON.stringify(merged, null, 2))
+  process.exit(0)
+}
+
+await call(entrypoint, { method: "PUT", body: JSON.stringify({ rules: merged }) })
+console.log(`[cdn] cache rule aset aktif (${merged.length} aturan total, ${others.length} lain dipertahankan)`)
 
 // ── Setelan zona ────────────────────────────────────────────────────────
-const settings: Array<[string, string | number]> = [
+const settings: Array<[string, unknown]> = [
   ["brotli", "on"],
   ["http3", "on"],
   ["always_use_https", "on"],
   ["early_hints", "on"],
-  ["security_header", JSON.stringify({ strict_transport_security: { enabled: true, max_age: 31_536_000, include_subdomains: true, preload: true, nosniff: true } })],
-  // SSL ketat: origin GitHub menyajikan sertifikat valid untuk minilabs.id.
+  [
+    "security_header",
+    {
+      strict_transport_security: {
+        enabled: true,
+        max_age: 31_536_000,
+        include_subdomains: true,
+        preload: false,
+        nosniff: true,
+      },
+    },
+  ],
+  // Origin GitHub menyajikan sertifikat valid untuk minilabs.id.
   ["ssl", "strict"],
 ]
 
@@ -141,42 +169,10 @@ for (const [id, value] of settings) {
       method: "PATCH",
       body: JSON.stringify({ value }),
     })
-    console.log(`[cdn] setelan ${id} = ${value}`)
+    console.log(`[cdn] ${id} = ${typeof value === "string" ? value : "diperbarui"}`)
   } catch (err) {
     console.warn(`[cdn] lewati ${id}: ${(err as Error).message}`)
   }
-}
-
-// ── Redirect www → apex ─────────────────────────────────────────────────
-// Satu-satunya Record dengan pola redirect (Dynamic Redirect / Bulk) butuh
-// akun-level config; gunakan Redirect Rule zona bila tersedia.
-try {
-  const redirects = await call<{ rules: unknown[] }>(
-    `/zones/${zone.id}/rulesets/phases/http_request_dynamic_redirect/entrypoint`,
-  ).catch(() => ({ rules: [] }))
-  const others = (redirects.rules ?? []).filter(
-    (r) => !(r as { description?: string }).description?.startsWith("MiniLabs:"),
-  )
-  await call(`/zones/${zone.id}/rulesets/phases/http_request_dynamic_redirect/entrypoint`, {
-    method: "PUT",
-    body: JSON.stringify({
-      rules: [
-        {
-          description: "MiniLabs: www → apex",
-          expression: `(http.host eq "www.${zone.name}")`,
-          action: "redirect",
-          action_parameters: {
-            from_value: { status_code: 301, target_url: { expression: `concat("https://${zone.name}", http.request.uri.path)` }, preserve_query_string: true },
-          },
-          enabled: true,
-        },
-        ...others,
-      ],
-    }),
-  })
-  console.log("[cdn] redirect www → apex aktif")
-} catch (err) {
-  console.warn(`[cdn] lewati redirect www: ${(err as Error).message}`)
 }
 
 console.log("[cdn] selesai. Verifikasi: curl -sI https://minilabs.id/app.js | grep -i cache")

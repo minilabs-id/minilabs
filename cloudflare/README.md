@@ -38,29 +38,37 @@ adalah DNS *proxied*, bukan proxy aplikasi.
    | CNAME | `www` | `minilabs-id.github.io` | Proxied |
 3. **SSL/TLS → Overview**: mode **Full (strict)** (sertifikat GitHub untuk
    `minilabs.id` sudah valid).
-4. **Jalankan** `bun cloudflare/setup.ts` dengan token yang punya
-   *Zone → Cache Rules → Edit* + *Zone → Settings → Edit*:
+4. **Setel cache panjang.** Dua pilihan:
 
+   **A. Dashboard (tanpa token tambahan)** — Rules → Cache Rules → *Create rule*:
+   - Name: `MiniLabs aset immutable`
+   - If: `URI Path` `starts with` `/fonts/`
+     **OR** `URI Path` `equals` `/app.js`
+     **OR** `URI Path` `equals` `/logo.svg`
+
+   Then: *Eligible for cache*, *Edge TTL* → **Override origin** `1 year`,
+   *Browser TTL* → **Override origin** `1 year`.
+
+   **B. Script idempoten** — butuh token dengan *Zone → Cache Rules → Edit*:
    ```sh
+   CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ZONE=minilabs.id bun cloudflare/setup.ts --dry-run
    CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ZONE=minilabs.id bun cloudflare/setup.ts
    ```
+   Script juga menyalakan Brotli, HTTP/3, Always Use HTTPS, HSTS, Early Hints,
+   dan SSL *Full (strict)*.
 
-   Script ini idempoten dan mengatur:
-   - Cache Rule aset (`/fonts/*`, `/app.js`, `/logo.svg`, `og.*`) →
-     edge + browser TTL 1 tahun.
-   - Cache Rule HTML → TTL mengikuti origin (`max-age=600`).
-   - Brotli, HTTP/3, Always Use HTTPS, HSTS, Early Hints.
-   - Redirect `www.minilabs.id` → `minilabs.id`.
-
-   Atau setel Cache Rules manual di dashboard (Rules → Cache Rules) dengan
-   aturan yang sama bila tidak ingin memberi token tambahan.
+   HTML sengaja dibiarkan mengikuti perilaku default: Cloudflare tidak
+   meng-cache HTML, dan GitHub Pages sudah mengirim `max-age=600` sendiri —
+   sehingga perubahan konten tetap cepat terlihat.
 
 ## Verifikasi
 
 ```sh
-curl -sI https://minilabs.id/fonts/space-grotesk-var.woff2 | grep -i 'cf-cache-status\|cache-control'
+curl -sI https://minilabs.id/fonts/space-grotesk-var.woff2 | grep -i "cf-cache-status\|cache-control"
 # harapan: cf-cache-status: HIT, cache-control: public, max-age=31536000, immutable
 ```
+
+`cf-cache-status` hanya muncul setelah DNS proxied (awan oranye) aktif.
 
 ## Catatan aset
 
