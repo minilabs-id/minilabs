@@ -3,6 +3,7 @@
 // Konten proyek (docs) = single source bahasa sumber (Indonesia), dirender sekali
 // di namespace id; chrome situs (hub + halaman proyek) dibuat untuk id dan en.
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { createHash } from "node:crypto"
 import { dirname, join } from "node:path"
 import { PROJECTS, type Project } from "./projects.ts"
 import { type DocPage, fetchProjectDocs } from "./docs.ts"
@@ -23,7 +24,20 @@ const site = join(root, "site")
 // render-blocking sekaligus satu RTT pada jalur kritis pertama. Berkasnya kecil
 // (dan mengompres baik), jadi menukar cache lintas-halaman dengan FCP lebih cepat
 // adalah trade-off yang tepat untuk skor mobile.
-const stylesCss = readFileSync(join(root, "styles.css"), "utf8")
+
+// Aset yang disajikan dengan `Cache-Control: immutable` (lihat `_headers`) perlu
+// sidik jari di URL supaya perubahan berkas langsung terpakai. Versi = hash isi.
+const version = (rel: string): string =>
+  createHash("sha256").update(readFileSync(join(root, rel))).digest("hex").slice(0, 10)
+const assetUrl = (rel: string): string => `/${rel}?v=${version(rel)}`
+const fontUrl = (file: string): string => assetUrl(`fonts/${file}`)
+const appJsUrl = assetUrl("app.js")
+const logoUrl = assetUrl("logo.svg")
+
+const stylesCss = readFileSync(join(root, "styles.css"), "utf8").replace(
+  /\/fonts\/([\w.-]+\.woff2)/g,
+  (_, file: string) => fontUrl(file),
+)
 
 // Identitas brand (Bahasa Inggris, sama di semua locale). Kicker hero
 // dilokalisasi lewat copy.ts (`heroKicker`).
@@ -36,7 +50,7 @@ const ORG = "https://github.com/minilabs-id"
 // jika tidak jatuh balik ke logo SVG.
 const OG_CANDIDATES = ["og.png", "og.jpg", "og.jpeg", "og.webp"]
 const ogFile = OG_CANDIDATES.find((f) => existsSync(join(root, f)))
-const ogImage = ogFile ? `${base}/${ogFile}` : `${base}/logo.svg`
+const ogImage = ogFile ? `${base}/${ogFile}?v=${version(ogFile)}` : `${base}${logoUrl}`
 
 rmSync(site, { recursive: true, force: true })
 mkdirSync(site, { recursive: true })
@@ -103,9 +117,9 @@ ${alts}
 <meta name="twitter:description" content="${escAttr(desc)}" />
 <meta name="twitter:image" content="${ogImage}" />
 <meta name="theme-color" content="#f6f5f0" />
-<link rel="icon" type="image/svg+xml" href="/logo.svg" />
-<link rel="preload" href="/fonts/space-grotesk-var.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="/fonts/ibm-plex-mono-500.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="icon" type="image/svg+xml" href="${logoUrl}" />
+<link rel="preload" href="${fontUrl("space-grotesk-var.woff2")}" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="${fontUrl("ibm-plex-mono-500.woff2")}" as="font" type="font/woff2" crossorigin />
 <style>${stylesCss}</style>
 <script>document.documentElement.classList.add("js")</script>
 </head>
@@ -116,7 +130,7 @@ ${header(lang, rel, isSite)}
 <main id="main">${body}</main>
 ${footer()}
 </div>
-<script src="/app.js" defer></script>
+<script src="${appJsUrl}" defer></script>
 </body>
 </html>`
 }
@@ -133,7 +147,7 @@ function header(lang: Lang, rel: string, showLang: boolean): string {
     : ""
   return `<header class="site-header">
   <a class="brand" href="${homeUrl(lang)}" aria-label="${escAttr(t.brandLabel)}">
-    <img src="/logo.svg" alt="MiniLabs" class="logo" width="1536" height="1024" />
+    <img src="${logoUrl}" alt="MiniLabs" class="logo" width="1536" height="1024" />
   </a>
   <nav class="nav" aria-label="${escAttr(t.navLabel)}">
     <a href="${homeUrl(lang)}#proyek">${esc(t.navProjects)}</a>
@@ -416,6 +430,29 @@ write(
     `- [AI catalog](${base}${AI_CATALOG_PATH})`,
     "",
   ].join("\n"),
+)
+
+// ── header cache + keamanan (Cloudflare Pages `_headers`) ───────────────
+// Pages tak punya kontrol TTL; `_headers` satu-satunya jalur. HTML harus
+// revalidasi, sedangkan aset berversi boleh `immutable` setahun. Aturan aset
+// men-`! Cache-Control` dulu supaya tidak tergabung (join koma) dengan `/*`.
+const immutable = (paths: string[]): string =>
+  paths
+    .map((p) => `${p}\n  ! Cache-Control\n  Cache-Control: public, max-age=31536000, immutable\n`)
+    .join("\n")
+write(
+  "_headers",
+  `/*
+  Cache-Control: public, max-age=0, must-revalidate
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Content-Security-Policy: default-src 'self'; img-src 'self' data: https:; media-src 'self' https:; frame-src 'self' https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; font-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'
+
+${immutable(["/fonts/*", "/app.js", "/logo.svg"])}${ogFile ? immutable([`/${ogFile}`]) : ""}`,
 )
 
 // ── aset statis ─────────────────────────────────────────────────────────

@@ -78,10 +78,28 @@ kanonik dokumen artifact, `capabilities`, `tags`, dan `representativeQueries`
 
 ## Deploy
 
-`.github/workflows/deploy-pages.yml` men-deploy ke GitHub Pages pada push ke
-`main`, dispatch manual, `repository_dispatch` (`update-docs` dari repo proyek),
-dan jadwal harian. Dokumentasi proyek di-cache via `actions/cache` agar tidak
-selalu klon dari nol.
+`.github/workflows/deploy-pages.yml` men-deploy pada push ke `main`, dispatch
+manual, `repository_dispatch` (`update-docs` dari repo proyek), dan jadwal
+harian. Dokumentasi proyek di-cache via `actions/cache` agar tidak selalu klon
+dari nol.
+
+Dua target, satu artefak `site/`:
+
+1. **Cloudflare Pages** (`minilabs`) — target utama bila secret
+   `CLOUDFLARE_API_TOKEN` tersedia. Hanya platform ini yang menerapkan
+   [`_headers`](./build.ts) (cache `immutable` untuk aset berversi + header
+   keamanan), karena GitHub Pages tidak mendukung header kustom.
+2. **GitHub Pages** — fallback, selalu berjalan.
+
+Deploy manual:
+
+```sh
+bun build.ts && bun check.ts
+bunx wrangler@4 pages deploy site --project-name minilabs --branch main
+```
+
+Aset (`app.js`, `logo.svg`, font) diberi query `?v=<hash>` oleh build agar
+aman di-cache `immutable` setahun; HTML tetap `must-revalidate`.
 
 ## Lisensi
 

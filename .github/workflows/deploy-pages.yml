@@ -25,6 +25,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Pages
@@ -45,6 +47,14 @@ jobs:
         run: bun build.ts
       - name: Validate output
         run: bun check.ts
+      # Cloudflare Pages: satu-satunya jalur yang bisa mengirim `_headers`
+      # (cache immutable + keamanan). Di-skip otomatis selama secret belum diisi,
+      # sehingga GitHub Pages tetap menjadi fallback.
+      - name: Deploy to Cloudflare Pages
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: bunx wrangler@4 pages deploy site --project-name minilabs --branch main
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || 'b019700808c64001ba7b5127fd9e316a' }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: "site"

@@ -2,6 +2,7 @@
 site/
 .docs-cache/
 node_modules/
+.wrangler/
 
 # OS / editor
 .DS_Store
