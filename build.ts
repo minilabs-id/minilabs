@@ -33,6 +33,18 @@ const assetUrl = (rel: string): string => `/${rel}?v=${version(rel)}`
 const fontUrl = (file: string): string => assetUrl(`fonts/${file}`)
 const appJsUrl = assetUrl("app.js")
 const logoUrl = assetUrl("logo.svg")
+// Dimensi intrinsik logo (dari viewBox) untuk atribut width/height pada <img>:
+// memberi rasio aspek yang benar sebelum gambar dimuat (mencegah CLS), dan tetap
+// sinkron otomatis bila logo.svg berubah.
+const logoSize = (() => {
+  const m = /viewBox="\s*-?[\d.]+ -?[\d.]+ ([\d.]+) ([\d.]+)"/.exec(
+    readFileSync(join(root, "logo.svg"), "utf8"),
+  )
+  if (!m) return null
+  const w = Math.round(Number(m[1]))
+  const h = Math.round(Number(m[2]))
+  return Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0 ? { w, h } : null
+})()
 
 const stylesCss = readFileSync(join(root, "styles.css"), "utf8").replace(
   /\/fonts\/([\w.-]+\.woff2)/g,
@@ -147,7 +159,7 @@ function header(lang: Lang, rel: string, showLang: boolean): string {
     : ""
   return `<header class="site-header">
   <a class="brand" href="${homeUrl(lang)}" aria-label="${escAttr(t.brandLabel)}">
-    <img src="${logoUrl}" alt="MiniLabs" class="logo" width="1536" height="1024" />
+    <img src="${logoUrl}" alt="MiniLabs" class="logo"${logoSize ? ` width="${logoSize.w}" height="${logoSize.h}"` : ""} />
   </a>
   <nav class="nav" aria-label="${escAttr(t.navLabel)}">
     <a href="${homeUrl(lang)}#proyek">${esc(t.navProjects)}</a>
