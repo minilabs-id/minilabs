@@ -137,12 +137,12 @@ a {
 
 .logo {
   width: auto;
-  height: 44px;
+  height: 28px;
 }
 
 @media (min-width: 640px) {
   .logo {
-    height: 58px;
+    height: 34px;
   }
 }
 
