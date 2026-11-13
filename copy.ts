@@ -3,9 +3,9 @@
 // konten proyek (tagline/overview/dst) terlokalisasi terpisah di projects.ts.
 // Semua nilai di sini adalah TEKS BIASA (tanpa HTML) — build.ts meng-escape-nya.
 //
-// Posisi MiniLabs: laboratorium eksperimen independen yang membuat dan menguji
-// hal-hal kecil. Sengaja digeneralkan — TIDAK mengklaim "open source" sebagai
-// identitas, dan TIDAK mengklaim semua proyeknya soal AI.
+// Posisi MiniLabs: kotak pasir untuk menguji ide-ide liar lewat baris kode.
+// Sengaja digeneralkan — TIDAK mengklaim "open source" sebagai identitas,
+// dan TIDAK mengklaim semua proyeknya soal AI.
 
 export type Lang = "id" | "en"
 
@@ -88,7 +88,7 @@ export const CHROME: Record<Lang, SiteCopy> = {
     navLabel: "Navigasi utama",
     langLabel: "Bahasa",
     skipLink: "Lewati ke konten",
-    heroKicker: "Laboratorium eksperimen · independen",
+    heroKicker: "Kotak pasir · eksperimen independen",
     heroSub:
       "Kotak pasir tempat ide-ide liar diuji lewat baris kode.",
     heroCtaPrimary: "Lihat {name} →",
@@ -123,10 +123,10 @@ export const CHROME: Record<Lang, SiteCopy> = {
     backToLabs: "← MiniLabs",
     docsIndexTitle: "Dokumentasi",
     docsBack: "← Dokumentasi",
-    homeTitle: "MiniLabs — laboratorium eksperimen independen",
+    homeTitle: "MiniLabs — kotak pasir untuk menguji ide lewat baris kode",
     homeDesc:
       "MiniLabs adalah kotak pasir untuk menguji ide-ide liar lewat baris kode — alat, agen, CMS, sampai eksperimen iseng. Tidak semuanya open source, dan tidak semuanya soal AI.",
-    ogImageAlt: "MiniLabs — laboratorium eksperimen independen",
+    ogImageAlt: "MiniLabs — Exploring ideas. Engineering possibilities.",
     notFoundTitle: "404 — Halaman tidak ditemukan",
     notFoundHeading: "Halaman tidak ditemukan",
     notFoundBody: "Tautan yang Anda buka mungkin sudah dipindahkan atau tidak pernah ada.",
@@ -144,7 +144,7 @@ export const CHROME: Record<Lang, SiteCopy> = {
     navLabel: "Main navigation",
     langLabel: "Language",
     skipLink: "Skip to content",
-    heroKicker: "Independent lab · build & experiment",
+    heroKicker: "A sandbox · build & experiment",
     heroSub:
       "A sandbox where wild ideas are tested through lines of code.",
     heroCtaPrimary: "See {name} →",
@@ -179,10 +179,10 @@ export const CHROME: Record<Lang, SiteCopy> = {
     backToLabs: "← MiniLabs",
     docsIndexTitle: "Documentation",
     docsBack: "← Documentation",
-    homeTitle: "MiniLabs — an independent laboratory",
+    homeTitle: "MiniLabs — a sandbox for testing ideas through lines of code",
     homeDesc:
       "MiniLabs is a sandbox for testing wild ideas through lines of code — tools, agents, a CMS, and idle experiments. Not everything is open source, and not everything is about AI.",
-    ogImageAlt: "MiniLabs — an independent laboratory",
+    ogImageAlt: "MiniLabs — Exploring ideas. Engineering possibilities.",
     notFoundTitle: "404 — Page not found",
     notFoundHeading: "Page not found",
     notFoundBody: "The link you followed may have moved, or may never have existed.",

@@ -105,6 +105,32 @@ function layout(opts: {
     : ""
   const htmlLang = LANGS.find((L) => L.code === lang)?.htmlLang ?? "id"
   const t = CHROME[lang]
+  // JSON-LD hanya di beranda (WebSite + Organization). @id konsisten lintas
+  // locale agar Google menduplikasi entitas yang sama.
+  const jsonLd =
+    rel === ""
+      ? `<script type="application/ld+json">${JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              "@id": `${base}/#org`,
+              name: "MiniLabs",
+              url: `${base}/`,
+              logo: `${base}/logo.svg`,
+            },
+            {
+              "@type": "WebSite",
+              "@id": `${base}/#website`,
+              url: `${canon}`,
+              name: "MiniLabs",
+              description: t.homeDesc,
+              inLanguage: htmlLang === "en" ? "en" : "id",
+              publisher: { "@id": `${base}/#org` },
+            },
+          ],
+        }).replace(/</g, "\\u003c")}</script>`
+      : ""
   return `<!DOCTYPE html>
 <html lang="${htmlLang}">
 <head>
@@ -134,6 +160,7 @@ ${alts}
 <link rel="preload" href="${fontUrl("ibm-plex-mono-500.woff2")}" as="font" type="font/woff2" crossorigin />
 <style>${stylesCss}</style>
 <script>document.documentElement.classList.add("js")</script>
+${jsonLd}
 </head>
 <body>
 <a class="skip-link" href="#main">${esc(t.skipLink)}</a>
