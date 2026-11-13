@@ -98,14 +98,14 @@ export const CHROME: Record<Lang, SiteCopy> = {
     aboutLabel: "Tentang",
     aboutTitle: "Tentang MiniLabs",
     aboutP1:
-      "MiniLabs adalah laboratorium eksperimen independen — tempat membuat, menguji, dan sesekali merilis hal-hal kecil, satu ide per proyek. Tidak semua proyek open source, dan tidak semua soal AI; sebagian hanyalah eksperimen yang layak dicoba.",
+      "MiniLabs berdiri sebagai wadah eksplorasi mandiri bagi gagasan-gagasan yang layak diuji. Fokus utamanya bukan mengejar skala atau menumpuk kerumitan, melainkan memahami inti dari sebuah persoalan lewat proses merancang dan membangun.",
     aboutP2:
-      "Dari alat dan agen sampai CMS dan eksperimen iseng — yang menyatukan bukan kategori, melainkan cara kerja: sederhana, jujur soal batas dan kegagalan, dan antarmuka yang mereda agar karyanya yang bicara.",
+      "Setiap eksperimen dimulai dari kanvas kosong tanpa terikat pada satu bidang tertentu. Prinsipnya sederhana: bangun dengan jernih, ukur hasilnya secara objektif, dan biarkan segalanya mereda agar substansinya tetap menjadi pusat perhatian.",
     aboutPrinciples: [
-      "Sederhana & ringan — minim dependensi; permukaan yang kecil, mudah dipahami dan diaudit.",
-      "Jujur & terukur — batas dan kegagalan dilaporkan apa adanya, bukan klaim.",
-      "Dokumentasi hidup — catatan ditulis bersama kode, dirender otomatis di sini saat berubah.",
-      "Minimalis monokrom — hitam di atas krem; desain yang mereda agar karyanya yang bicara.",
+      "Fokus dan proporsional: Dibangun secukupnya untuk menguji satu konsep, ringan dipahami dari luar maupun dalam.",
+      "Objektif dalam menguji: Menempatkan fakta hasil eksperimen di atas asumsi, termasuk saat menemui jalan buntu.",
+      "Jejak yang hidup: Setiap perubahan dan temuan baru terdokumentasi langsung mengikuti ritme pengerjaan.",
+      "Minimalis yang fungsional: Membiarkan ruang tetap bersih dan kontras agar perhatian tertuju penuh pada karya.",
     ],
     aboutMeta: "{total} proyek & eksperimen — {live} aktif, {planned} dalam perencanaan.",
     aboutCta: "GitHub ↗",
@@ -154,14 +154,14 @@ export const CHROME: Record<Lang, SiteCopy> = {
     aboutLabel: "About",
     aboutTitle: "About MiniLabs",
     aboutP1:
-      "MiniLabs is an independent laboratory — a place to make, test, and occasionally ship small things, one idea per project. Not everything is open source, and not everything is about AI; some are just experiments worth trying.",
+      "MiniLabs exists as an independent space for exploring ideas worth testing. Its main focus isn't chasing scale or piling up complexity, but understanding the essence of a problem through the process of designing and building.",
     aboutP2:
-      "From tools and agents to a CMS and idle experiments — what ties them together isn't the category, but the way of working: simple, honest about limits and failures, and an interface that steps back so the work can speak.",
+      "Every experiment begins on a blank canvas, untethered to any single field. The principle is simple: build with clarity, measure the results objectively, and let everything recede so the substance itself stays at the center.",
     aboutPrinciples: [
-      "Simple & light — as few dependencies as possible; a small surface, easy to understand and audit.",
-      "Honest & measured — limits and failures reported as they are, not claims.",
-      "Living documentation — notes written alongside the code, rendered here automatically as it changes.",
-      "Monochromatic minimalism — black on cream; a design that recedes so the work can speak.",
+      "Focused and proportionate: Built just enough to test a single concept, light to grasp from the inside and the outside.",
+      "Objective in testing: Placing the facts of an experiment above assumptions, even when it hits a dead end.",
+      "A living trail: Every change and new finding is recorded directly, following the rhythm of the work.",
+      "Functional minimalism: Keeping the space clean and high-contrast so attention rests entirely on the work.",
     ],
     aboutMeta: "{total} projects & experiments — {live} live, {planned} planned.",
     aboutCta: "GitHub ↗",
