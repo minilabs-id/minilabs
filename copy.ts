@@ -90,7 +90,7 @@ export const CHROME: Record<Lang, SiteCopy> = {
     skipLink: "Lewati ke konten",
     heroKicker: "Laboratorium eksperimen · independen",
     heroSub:
-      "Tempat kami membuat, menguji, dan sesekali merilis hal-hal kecil — satu ide per proyek, tanpa memaksakan fitur.",
+      "Kotak pasir tempat ide-ide liar diuji lewat baris kode.",
     heroCtaPrimary: "Lihat {name} →",
     heroCtaSecondary: "Semua proyek",
     projectsLabel: "Proyek",
