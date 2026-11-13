@@ -125,7 +125,7 @@ export const CHROME: Record<Lang, SiteCopy> = {
     docsBack: "← Dokumentasi",
     homeTitle: "MiniLabs — laboratorium eksperimen independen",
     homeDesc:
-      "MiniLabs adalah laboratorium eksperimen independen yang membuat dan menguji hal-hal kecil — alat, agen, CMS, sampai eksperimen iseng. Tidak semuanya open source, dan tidak semuanya soal AI.",
+      "MiniLabs adalah kotak pasir untuk menguji ide-ide liar lewat baris kode — alat, agen, CMS, sampai eksperimen iseng. Tidak semuanya open source, dan tidak semuanya soal AI.",
     ogImageAlt: "MiniLabs — laboratorium eksperimen independen",
     notFoundTitle: "404 — Halaman tidak ditemukan",
     notFoundHeading: "Halaman tidak ditemukan",
@@ -146,7 +146,7 @@ export const CHROME: Record<Lang, SiteCopy> = {
     skipLink: "Skip to content",
     heroKicker: "Independent lab · build & experiment",
     heroSub:
-      "A place to make, test, and occasionally ship small things — one idea per project, with no forced features.",
+      "A sandbox where wild ideas are tested through lines of code.",
     heroCtaPrimary: "See {name} →",
     heroCtaSecondary: "All projects",
     projectsLabel: "Projects",
@@ -181,7 +181,7 @@ export const CHROME: Record<Lang, SiteCopy> = {
     docsBack: "← Documentation",
     homeTitle: "MiniLabs — an independent laboratory",
     homeDesc:
-      "MiniLabs is an independent laboratory that makes and tests small things — tools, agents, a CMS, and idle experiments. Not everything is open source, and not everything is about AI.",
+      "MiniLabs is a sandbox for testing wild ideas through lines of code — tools, agents, a CMS, and idle experiments. Not everything is open source, and not everything is about AI.",
     ogImageAlt: "MiniLabs — an independent laboratory",
     notFoundTitle: "404 — Page not found",
     notFoundHeading: "Page not found",
