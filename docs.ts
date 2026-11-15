@@ -32,6 +32,8 @@ export interface DocLinkContext {
   repo: string
   /** Direktori dokumen relatif terhadap akar `docs/`; "" untuk level atas. */
   dir: string
+  /** Direktori sumber docs di repo (`docs` atau `docs-en`), untuk tautan keluar. */
+  docsDir?: string
 }
 
 const hasScheme = (u: string): boolean => /^[a-z][a-z0-9+.-]*:/i.test(u)
@@ -53,6 +55,24 @@ export function resolveDocLink(u: string, ctx: DocLinkContext): string {
   if (!pathPart) return u
 
   if (/\.md$/i.test(pathPart)) {
+    // Tautan keluar dari akar docs yang dirender (mis. `../TERMINAL_CONTRACT.md`
+    // dari `docs-en/`) bukan halaman di situs, jadi diarahkan ke berkas di repo
+    // alih-alih membangun URL halaman yang pasti 404. Kedalaman `..` dihitung
+    // manual karena `posix.normalize` mengangkat `..` pada path relatif, dan
+    // join akar-docs dengan hasil normalisasi membuang `..` tanpa terlihat.
+    const depth = ctx.dir === "" ? 0 : ctx.dir.split("/").length
+    const up = pathPart.split("/").filter((seg) => seg === "..").length
+    if (up > depth) {
+      // Target di atas akar docs: berkas itu tidak dirender sebagai halaman,
+      // jadi arahkan ke lokasinya di repo. Direktori sumber (`docs`/`docs-en`)
+      // tetap dipakai supaya `../X.md` menunjuk `docs/X.md`, bukan root repo.
+      // `node:path.join` sudah menormalkan `..`, jadi `docs-en/../X.md` menjadi
+      // `X.md` tanpa sisa — tidak perlu menggabung path secara manual.
+      // Berkas di atas direktori sumber hanya ada di `docs/` (spesifikasi
+      // internal FROZEN tidak diterjemahkan), jadi targetnya selalu `docs/<name>`.
+      const name = pathPart.split("/").filter((seg) => seg !== "..").join("/")
+      return `https://github.com/${ctx.repo}/blob/HEAD/docs/${name}${hash}`
+    }
     const base = posix
       .normalize(posix.join(ctx.dir, pathPart.replace(/\.md$/i, "")))
       .replace(/^\.\//, "")
@@ -312,7 +332,7 @@ export async function fetchProjectDocs(opts: {
     const title = titleLine ? titleLine[1]!.replace(/[`*]/g, "").trim() : name
     const body = titleLine ? raw.replace(/^#\s+.*(?:\r?\n)?/m, "") : raw
 
-    pages.push({ name, title, html: mdToHtml(body, { slug, repo, dir }) })
+    pages.push({ name, title, html: mdToHtml(body, { slug, repo, dir, docsDir }) })
   }
   return pages
 }
