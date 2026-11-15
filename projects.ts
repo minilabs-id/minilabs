@@ -81,7 +81,7 @@ export const PROJECTS: Project[] = [
       ],
       metadata: {
         status: "live",
-        install: "npm install -g minicode-ai",
+        install: "bun add -g minicode-ai",
         docs: "https://minilabs.id/projects/minicode/docs/",
       },
     },
@@ -100,10 +100,10 @@ export const PROJECTS: Project[] = [
         ],
         install: [
           {
-            label: "Prasyarat — pasang Bun (≥ 1.1.13). Ini runtime-nya; npm hanya dipakai untuk distribusi.",
+            label: "Prasyarat — pasang Bun (≥ 1.1.13). Ini runtime-nya sekaligus pemasangnya.",
             command: "curl -fsSL https://bun.sh/install | bash",
           },
-          { label: "Pasang MiniCode dari npm.", command: "npm install -g minicode-ai" },
+          { label: "Pasang MiniCode dengan Bun.", command: "bun add -g minicode-ai" },
           {
             label: "Jalankan — wizard setup muncul bila belum ada provider, lalu TUI interaktif.",
             command: "minicode",
@@ -127,10 +127,10 @@ export const PROJECTS: Project[] = [
         ],
         install: [
           {
-            label: "Prerequisite — install Bun (≥ 1.1.13). This is the runtime; npm is only for distribution.",
+            label: "Prerequisite — install Bun (≥ 1.1.13). It is both the runtime and the installer.",
             command: "curl -fsSL https://bun.sh/install | bash",
           },
-          { label: "Install MiniCode from npm.", command: "npm install -g minicode-ai" },
+          { label: "Install MiniCode with Bun.", command: "bun add -g minicode-ai" },
           {
             label: "Run it — a setup wizard appears if no provider is configured, then the interactive TUI.",
             command: "minicode",

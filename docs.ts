@@ -230,6 +230,16 @@ export interface DocPage {
   html: string
 }
 
+/**
+ * Apakah sumber docs ini ada di repo proyek? Dipakai build untuk memutuskan
+ * apakah bahasa itu perlu ditautkan dari halaman proyek, tanpa melakukan klon
+ * kedua. Cache klon dari `fetchProjectDocs` bisa dipakai ulang.
+ */
+export function hasDocsDir(opts: { repo: string; docsDir: string; cacheDir: string }): boolean {
+  const cloneDir = join(opts.cacheDir, opts.repo.replace("/", "--"))
+  return existsSync(join(cloneDir, opts.docsDir))
+}
+
 /** Kumpulkan semua file .md secara rekursif (lewati meta + direktori tersembunyi). */
 function collectDocFiles(dir: string, prefix: string, acc: string[]): void {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {

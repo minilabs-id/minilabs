@@ -175,7 +175,7 @@ export const CHROME: Record<Lang, SiteCopy> = {
     sourceIntro: "Repo, releases, and full documentation one click away.",
     githubCta: "GitHub ↗",
     docsCta: "Documentation →",
-    docsCtaNote: " (Bahasa Indonesia)",
+    docsCtaNote: "",
     backToLabs: "← MiniLabs",
     docsIndexTitle: "Documentation",
     docsBack: "← Documentation",

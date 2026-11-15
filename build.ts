@@ -245,7 +245,7 @@ function footer(): string {
 }
 
 // ── Seksi halaman detail ────────────────────────────────────────────────
-function detailSections(p: Project, lang: Lang): string {
+function detailSections(p: Project, lang: Lang, docsAvailable?: Partial<Record<Lang, boolean>>): string {
   const t = CHROME[lang]
   const c = p.content[lang]
   const sections: Array<{ id: string; title: string; body: string }> = []
@@ -284,14 +284,25 @@ function detailSections(p: Project, lang: Lang): string {
   }
 
   if (p.repo) {
-    const docsHref = `${href("id", `projects/${p.slug}/docs/`)}` // docs = single source (id)
+    // Docs dirender per bahasa dari sumbernya sendiri: `docs/` untuk id,
+    // `docs-en/` untuk en. Tautan mengikuti halaman yang sedang dibuka, dan
+    // hanya muncul bila sumber bahasa itu memang ada. Path tujuannya literal
+    // (bukan interpolasi) supaya validator link di `check.ts` bisa membuktikan
+    // targetnya ada tanpa menebak nama variabel.
+    const hasDocs = docsAvailable?.[lang] ?? lang === "id"
+    const docsBtn =
+      hasDocs && lang === "en"
+        ? `<a class="btn btn--ghost" href="/en/projects/${p.slug}/docs/">${esc(t.docsCta)}${esc(t.docsCtaNote)}</a>`
+        : hasDocs
+          ? `<a class="btn btn--ghost" href="/projects/${p.slug}/docs/">${esc(t.docsCta)}${esc(t.docsCtaNote)}</a>`
+          : ""
     sections.push({
       id: t.anchorSource,
       title: t.sourceTitle,
       body: `<p class="pblock__intro">${esc(t.sourceIntro)}</p>
         <p class="project__links">
           <a class="btn" href="https://github.com/${p.repo}" rel="noopener noreferrer">${esc(t.githubCta)}</a>
-          <a class="btn btn--ghost" href="${docsHref}">${esc(t.docsCta)}${esc(t.docsCtaNote)}</a>
+          ${docsBtn}
         </p>`,
     })
   }
@@ -311,11 +322,42 @@ const urls: string[] = []
 /** Tautan dokumentasi bertajuk (untuk llms.txt) — judul lebih berguna daripada URL telanjang. */
 const docLinks: string[] = []
 
+// ── Sumber docs per proyek (dilacak sebelum render) ─────────────────────
+// Sumber bahasa id = `docs/`, en = `docs-en/`. Kalau `docs-en/` belum ada di repo
+// proyek, halaman proyek versi en tidak menaut docs (bukan tautan 404).
+const DOC_SOURCES: Array<{ lang: Lang; docsDir: string }> = [
+  { lang: "id", docsDir: "docs" },
+  { lang: "en", docsDir: "docs-en" },
+]
+/** `slug -> bahasa yang punya docs`. */
+const DOCS_AVAILABLE = new Map<string, Partial<Record<Lang, boolean>>>()
+const DOC_CACHE_DIR = join(root, ".docs-cache")
+
 // ── Hub + halaman detail (id + en) ──────────────────────────────────────
 const liveCount = PROJECTS.filter((p) => p.status === "live").length
 const plannedCount = PROJECTS.length - liveCount
 const featured = PROJECTS.find((p) => p.status === "live" && p.repo) ?? PROJECTS[0]!
 
+// ── Klon cache docs (sebelum render, agar tautan sudah pasti) ───────────
+// `fetchProjectDocs` melakukan klon + pull setiap panggilan, jadi sumber bahasa
+// halaman proyek dipanggil lebih dulu hanya untuk memastikan cache terisi;
+// hasilnya dipakai lagi oleh loop render di bawah (tanpa klon kedua).
+for (const p of PROJECTS) {
+  if (!p.repo) continue
+  const availability: Partial<Record<Lang, boolean>> = {}
+  for (const src of DOC_SOURCES) {
+    const pages = await fetchProjectDocs({
+      repo: p.repo,
+      slug: p.slug,
+      docsDir: src.docsDir,
+      cacheDir: DOC_CACHE_DIR,
+    })
+    availability[src.lang] = pages.length > 0
+  }
+  DOCS_AVAILABLE.set(p.slug, availability)
+}
+
+// ── Hub + halaman detail (id + en) ──────────────────────────────────────
 for (const L of LANGS) {
   const lang = L.code
   const t = CHROME[lang]
@@ -405,7 +447,7 @@ for (const L of LANGS) {
       <div class="project__lede" data-reveal>
         <p>${esc(c.overview)}</p>
       </div>
-      ${detailSections(p, lang)}
+      ${detailSections(p, lang, DOCS_AVAILABLE.get(p.slug))}
     </article>`
     write(
       `${prefix(lang)}${rel}index.html`,
@@ -415,47 +457,54 @@ for (const L of LANGS) {
   }
 }
 
-// ── Dokumentasi per proyek (id saja — konten bahasa sumber) ──────────────
+// ── Dokumentasi per proyek, per bahasa ──────────────────────────────────
 for (const p of PROJECTS) {
   if (!p.repo) continue
-  const pages = await fetchProjectDocs({
-    repo: p.repo,
-    slug: p.slug,
-    docsDir: "docs",
-    cacheDir: join(root, ".docs-cache"),
-  })
-  if (pages.length === 0) continue
+  const docsAvailable = DOCS_AVAILABLE.get(p.slug) ?? {}
+  for (const src of DOC_SOURCES) {
+    const pages = await fetchProjectDocs({
+      repo: p.repo,
+      slug: p.slug,
+      docsDir: src.docsDir,
+      cacheDir: DOC_CACHE_DIR,
+    })
+    docsAvailable[src.lang] = pages.length > 0
+    if (pages.length === 0) continue
 
-  const t = CHROME.id
-  const docsRel = `projects/${p.slug}/docs/`
-  const docsIndexBody = `
+    const lang = src.lang
+    const t = CHROME[lang]
+    // `docsRel` sudah memuat prefiks bahasa, jadi ditaruh langsung di `rel`
+    // (tanpa `href()`, yang akan menambahkan prefiks itu untuk kedua kalinya).
+    const docsRel = `${prefix(lang)}projects/${p.slug}/docs/`
+    const docsIndexBody = `
     <article class="project project--docs">
-      <a class="back" href="${homeUrl("id")}">${esc(t.backToLabs)}</a>
+      <a class="back" href="${homeUrl(lang)}">${esc(t.backToLabs)}</a>
       <h1 class="project__name project__name--doc">${esc(p.name)} — ${esc(t.docsIndexTitle)}</h1>
       <ul class="doclist">
-        ${pages.map((d) => `<li><a href="${href("id", `${docsRel}${d.name}/`)}">${esc(d.title)}</a></li>`).join("\n")}
+        ${pages.map((d) => `<li><a href="/${docsRel}${d.name}/">${esc(d.title)}</a></li>`).join("\n")}
       </ul>
     </article>`
-  write(
-    `${docsRel}index.html`,
-    layout({ lang: "id", rel: docsRel, title: `${p.name} — ${t.docsIndexTitle}`, desc: `${t.docsIndexTitle} ${p.name}.`, body: docsIndexBody }),
-  )
-  urls.push(`${base}${href("id", docsRel)}`)
+    write(
+      `${docsRel}index.html`,
+      layout({ lang, rel: docsRel, title: `${p.name} — ${t.docsIndexTitle}`, desc: `${t.docsIndexTitle} ${p.name}.`, body: docsIndexBody }),
+    )
+    urls.push(`${base}/${docsRel}`)
 
-  for (const d of pages) {
-    const rel = `${docsRel}${d.name}/`
-    const docBody = `
+    for (const d of pages) {
+      const rel = `${docsRel}${d.name}/`
+      const docBody = `
       <article class="project project--docs">
-        <a class="back" href="${href("id", docsRel)}">${esc(t.docsBack)}</a>
+        <a class="back" href="/${docsRel}">${esc(t.docsBack)}</a>
         <h1 class="project__name project__name--doc">${esc(d.title)}</h1>
         <div class="docs">${d.html}</div>
       </article>`
-    write(
-      `${rel}index.html`,
-      layout({ lang: "id", rel, title: `${d.title} — ${p.name}`, desc: `${t.docsIndexTitle} ${p.name}: ${d.title}.`, body: docBody }),
-    )
-    urls.push(`${base}${href("id", rel)}`)
-    docLinks.push(`- [${p.name}: ${d.title}](${base}${href("id", rel)})`)
+      write(
+        `${rel}index.html`,
+        layout({ lang, rel, title: `${d.title} — ${p.name}`, desc: `${t.docsIndexTitle} ${p.name}: ${d.title}.`, body: docBody }),
+      )
+      urls.push(`${base}/${rel}`)
+      docLinks.push(`- [${p.name}: ${d.title}](${base}/${rel})`)
+    }
   }
 }
 
