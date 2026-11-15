@@ -155,7 +155,9 @@ ${alts}
 <meta name="twitter:description" content="${escAttr(desc)}" />
 <meta name="twitter:image" content="${ogImage}" />
 <meta name="theme-color" content="#f6f5f0" />
-<link rel="icon" type="image/svg+xml" href="${logoUrl}" />
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 <link rel="preload" href="${fontUrl("space-grotesk-var.woff2")}" as="font" type="font/woff2" crossorigin />
 <link rel="preload" href="${fontUrl("ibm-plex-mono-500.woff2")}" as="font" type="font/woff2" crossorigin />
 <style>${stylesCss}</style>
@@ -472,7 +474,16 @@ write(
 )
 
 // ── aset statis ─────────────────────────────────────────────────────────
-for (const f of ["app.js", "logo.svg", "CNAME", ...(ogFile ? [ogFile] : [])]) {
+for (const f of [
+  "app.js",
+  "logo.svg",
+  "favicon.ico",
+  "favicon-48x48.png",
+  "favicon-192x192.png",
+  "apple-touch-icon.png",
+  "CNAME",
+  ...(ogFile ? [ogFile] : []),
+]) {
   cpSync(join(root, f), join(site, f))
 }
 cpSync(join(root, "fonts"), join(site, "fonts"), { recursive: true })

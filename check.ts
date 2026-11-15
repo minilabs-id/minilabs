@@ -31,6 +31,10 @@ const required = [
   ".nojekyll",
   "app.js",
   "logo.svg",
+  "favicon.ico",
+  "favicon-48x48.png",
+  "favicon-192x192.png",
+  "apple-touch-icon.png",
   "fonts/space-grotesk-var.woff2",
   "fonts/ibm-plex-mono-400.woff2",
   "fonts/ibm-plex-mono-500.woff2",
@@ -134,6 +138,8 @@ for (const file of htmlFiles(site)) {
   if (h1 !== 1) fail(`${rel}: harus tepat satu <h1> (ada ${h1})`)
   if (!html.includes('classList.add("js")')) fail(`${rel}: hook no-JS (html.js) hilang`)
   if (!html.includes('rel="ard"')) fail(`${rel}: <link rel="ard"> hilang`)
+  if (!html.includes('href="/favicon.ico"')) fail(`${rel}: favicon.ico link hilang`)
+  if (!html.includes('href="/favicon-48x48.png"')) fail(`${rel}: PNG favicon link hilang`)
   if (!html.includes("<title>") || !html.includes('name="description"')) {
     fail(`${rel}: <title>/description hilang`)
   }
