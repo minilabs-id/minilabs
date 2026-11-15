@@ -60,9 +60,44 @@ const ORG = "https://github.com/minilabs-id"
 
 // og:image butuh raster (banyak platform mengabaikan SVG). Pakai `og.*` bila ada,
 // jika tidak jatuh balik ke logo SVG.
-const OG_CANDIDATES = ["og.png", "og.jpg", "og.jpeg", "og.webp"]
+const OG_CANDIDATES = ["og.png", "og.jpg", "og.jpeg", "og.webp"] as const
 const ogFile = OG_CANDIDATES.find((f) => existsSync(join(root, f)))
 const ogImage = ogFile ? `${base}/${ogFile}?v=${version(ogFile)}` : `${base}${logoUrl}`
+
+function ogImageMeta(file: string | undefined): { type?: string; width?: number; height?: number } {
+  if (!file) return {}
+  const ext = file.split(".").pop()?.toLowerCase()
+  const type =
+    ext === "png" ? "image/png" : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "webp" ? "image/webp" : undefined
+  let width: number | undefined
+  let height: number | undefined
+  try {
+    const buf = readFileSync(join(root, file))
+    if (ext === "png" && buf.length >= 24 && buf.toString("ascii", 1, 4) === "PNG") {
+      width = buf.readUInt32BE(16)
+      height = buf.readUInt32BE(20)
+    } else if ((ext === "jpg" || ext === "jpeg") && buf.length > 4) {
+      let i = 2
+      while (i + 9 < buf.length) {
+        if (buf[i] !== 0xff) break
+        const marker = buf[i + 1]!
+        const len = buf.readUInt16BE(i + 2)
+        if (marker >= 0xc0 && marker <= 0xc2 && i + 7 < buf.length) {
+          height = buf.readUInt16BE(i + 5)
+          width = buf.readUInt16BE(i + 7)
+          break
+        }
+        if (len < 2) break
+        i += 2 + len
+      }
+    }
+  } catch {
+    // best-effort: type saja jika dimensi gagal dibaca
+  }
+  return { type, width, height }
+}
+
+const ogMeta = ogImageMeta(ogFile)
 
 rmSync(site, { recursive: true, force: true })
 mkdirSync(site, { recursive: true })
@@ -102,7 +137,11 @@ function layout(opts: {
         (L) =>
           `<link rel="alternate" hreflang="${L.code}" href="${base}${href(L.code, rel)}" />`,
       ).join("\n") + `\n<link rel="alternate" hreflang="x-default" href="${base}${href("id", rel)}" />`
-    : ""
+    : // Halaman docs hanya ada di bahasa sumber (id). Tanpa sinyal hreflang,
+      // Google bisa menganggapnya duplikat chrome locale; nyatakan eksplisit.
+      rel.includes("/docs/")
+      ? `<link rel="alternate" hreflang="id" href="${canon}" />\n<link rel="alternate" hreflang="x-default" href="${canon}" />`
+      : ""
   const htmlLang = LANGS.find((L) => L.code === lang)?.htmlLang ?? "id"
   const t = CHROME[lang]
   // JSON-LD hanya di beranda (WebSite + Organization). @id konsisten lintas
@@ -138,22 +177,22 @@ function layout(opts: {
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${escAttr(title)}</title>
 <meta name="description" content="${escAttr(desc)}" />
-${noindex ? `<meta name="robots" content="noindex" />\n` : ""}<link rel="canonical" href="${canon}" />
-${alts}
-<link rel="ard" href="${ARD_PATH}" />
-<link rel="ai-catalog" href="${AI_CATALOG_PATH}" />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="MiniLabs" />
-<meta property="og:locale" content="${htmlLang === "en" ? "en_US" : "id_ID"}" />
-<meta property="og:title" content="${escAttr(title)}" />
-<meta property="og:description" content="${escAttr(desc)}" />
-<meta property="og:url" content="${canon}" />
-<meta property="og:image" content="${ogImage}" />
-<meta property="og:image:alt" content="${escAttr(t.ogImageAlt)}" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${escAttr(title)}" />
-<meta name="twitter:description" content="${escAttr(desc)}" />
-<meta name="twitter:image" content="${ogImage}" />
+  <meta name="robots" content="${noindex ? "noindex,nofollow" : "index,follow"}" />
+  ${noindex ? "" : `<link rel="canonical" href="${canon}" />\n`}${alts}
+  <link rel="ard" href="${ARD_PATH}" />
+  <link rel="ai-catalog" href="${AI_CATALOG_PATH}" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="MiniLabs" />
+  <meta property="og:locale" content="${htmlLang === "en" ? "en_US" : "id_ID"}" />
+  <meta property="og:title" content="${escAttr(title)}" />
+  <meta property="og:description" content="${escAttr(desc)}" />
+  ${noindex ? "" : `<meta property="og:url" content="${canon}" />\n`}  <meta property="og:image" content="${ogImage}" />
+  <meta property="og:image:alt" content="${escAttr(t.ogImageAlt)}" />
+  ${ogMeta.type ? `<meta property="og:image:type" content="${ogMeta.type}" />\n` : ""}${ogMeta.width ? `<meta property="og:image:width" content="${ogMeta.width}" />\n` : ""}${ogMeta.height ? `<meta property="og:image:height" content="${ogMeta.height}" />\n` : ""}  <meta name="twitter:card" content="${ogFile ? "summary_large_image" : "summary"}" />
+  <meta name="twitter:title" content="${escAttr(title)}" />
+  <meta name="twitter:description" content="${escAttr(desc)}" />
+  <meta name="twitter:image" content="${ogImage}" />
+  <meta name="twitter:image:alt" content="${escAttr(t.ogImageAlt)}" />
 <meta name="theme-color" content="#f6f5f0" />
 <link rel="icon" href="/favicon.ico" sizes="any" />
 <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
@@ -251,7 +290,7 @@ function detailSections(p: Project, lang: Lang): string {
       title: t.sourceTitle,
       body: `<p class="pblock__intro">${esc(t.sourceIntro)}</p>
         <p class="project__links">
-          <a class="btn" href="https://github.com/${p.repo}" rel="noopener">${esc(t.githubCta)}</a>
+          <a class="btn" href="https://github.com/${p.repo}" rel="noopener noreferrer">${esc(t.githubCta)}</a>
           <a class="btn btn--ghost" href="${docsHref}">${esc(t.docsCta)}${esc(t.docsCtaNote)}</a>
         </p>`,
     })
@@ -337,7 +376,7 @@ for (const L of LANGS) {
       </ol>
       <p class="about__meta">${aboutMeta}</p>
       <p class="about__cta">
-        <a class="btn" href="${ORG}" rel="noopener">${esc(t.aboutCta)}</a>
+        <a class="btn" href="${ORG}" rel="noopener noreferrer">${esc(t.aboutCta)}</a>
       </p>
     </div>
   </section>`

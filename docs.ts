@@ -76,7 +76,9 @@ function inline(s: string, ctx: DocLinkContext): string {
       return `<img src="${escAttr(resolveDocLink(u, ctx))}" alt="${escAttr(alt)}" loading="lazy" decoding="async" />`
     })
     .replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+&quot;[^&]*&quot;)?\)/g, (_m, label: string, u: string) => {
-      return `<a href="${escAttr(resolveDocLink(u, ctx))}">${label}</a>`
+      const href = resolveDocLink(u, ctx)
+      const rel = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(href) ? ` rel="noopener noreferrer"` : ""
+      return `<a href="${escAttr(href)}"${rel}>${label}</a>`
     })
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/__([^_]+)__/g, "<strong>$1</strong>")

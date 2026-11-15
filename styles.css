@@ -88,6 +88,28 @@ a {
   color: var(--bg);
 }
 
+/* Keyboard focus --------------------------------------------------------- */
+:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.site-header a:focus-visible,
+.btn:focus-visible,
+.lang:focus-visible,
+.card:focus-visible {
+  outline-offset: 4px;
+}
+
+.skip-link:focus-visible {
+  outline: 2px solid var(--bg);
+  outline-offset: 2px;
+}
+
 .page {
   min-height: 100vh;
   overflow: clip;

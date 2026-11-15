@@ -138,8 +138,27 @@ for (const file of htmlFiles(site)) {
   if (h1 !== 1) fail(`${rel}: harus tepat satu <h1> (ada ${h1})`)
   if (!html.includes('classList.add("js")')) fail(`${rel}: hook no-JS (html.js) hilang`)
   if (!html.includes('rel="ard"')) fail(`${rel}: <link rel="ard"> hilang`)
+  if (!html.includes('name="robots"')) fail(`${rel}: meta robots hilang`)
+  if (!html.includes('property="og:image:alt"')) fail(`${rel}: og:image:alt hilang`)
+  if (!html.includes('name="twitter:image:alt"')) fail(`${rel}: twitter:image:alt hilang`)
+  if (!html.includes(":focus-visible")) fail(`${rel}: CSS :focus-visible hilang`)
+  if (rel.includes("/docs/") && !html.includes('hreflang="id"')) fail(`${rel}: hreflang id hilang`)
+  for (const m of html.matchAll(/<a\b[^>]*href="(https?:\/\/[^\"]+)"[^>]*>/g)) {
+    if (!/rel="[^\"]*\bnoopener\b[^\"]*\bnoreferrer\b[^\"]*"/.test(m[0]!)) {
+      fail(`${rel}: tautan eksternal tanpa rel noopener noreferrer: ${m[1]}`)
+    }
+  }
+  if (rel !== "404.html" && !rel.endsWith("404.html") && !html.includes('content="index,follow"')) {
+    fail(`${rel}: halaman yang dapat diindeks harus menyatakan robots index,follow`)
+  }
+  if (rel.includes("404.html") && !html.includes('content="noindex,nofollow"')) fail(`${rel}: halaman 404 harus noindex,nofollow`)
   if (!html.includes('href="/favicon.ico"')) fail(`${rel}: favicon.ico link hilang`)
   if (!html.includes('href="/favicon-48x48.png"')) fail(`${rel}: PNG favicon link hilang`)
+  if (existsSync(join(site, "og.png")) || existsSync(join(site, "og.jpg")) || existsSync(join(site, "og.jpeg")) || existsSync(join(site, "og.webp"))) {
+    if (rel !== "404.html" && !html.includes('property="og:image:width"')) fail(`${rel}: og:image:width hilang`)
+    if (rel !== "404.html" && !html.includes('property="og:image:height"')) fail(`${rel}: og:image:height hilang`)
+    if (rel !== "404.html" && !html.includes('property="og:image:type"')) fail(`${rel}: og:image:type hilang`)
+  }
   if (!html.includes("<title>") || !html.includes('name="description"')) {
     fail(`${rel}: <title>/description hilang`)
   }
