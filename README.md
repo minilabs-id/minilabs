@@ -51,8 +51,8 @@ Edit hanya [`projects.ts`](./projects.ts): tambahkan objek `Project` ke array
 
 - `status`: `"live"`, `"beta"`, atau `"planned"`.
 - `repo`: slug `owner/name` GitHub. Jika ada, halaman dokumentasi dibangun dari
-  `docs/**.md` repo tersebut (ditampilkan dalam bahasa Indonesia — konten
-  dokumen hanya dirender sekali di namespace `id`).
+  `docs/**.md` (id) dan `docs-en/**.md` (en) repo tersebut; setiap
+  bahasa dirender pada namespace-nya sendiri.
 
 ## Discovery untuk agen & registry (ARD)
 
@@ -98,7 +98,8 @@ proxy DNS → SSL strict → Cache Rules → verifikasi): baca
 3. Cloudflare → **DNS → Records**: pastikan 4 record `A` `@` →
    `185.199.108–111.153` semuanya **Proxied** (awan oranye).
 4. **SSL/TLS → Overview**: mode **Full (strict)** + **Always Use HTTPS**.
-5. **Rules → Cache Rules**: aset `/fonts/*`, `/app.js`, `/logo.svg` →
+5. **Rules → Cache Rules**: aset `/fonts/*`, `/app.js`, `/logo.svg`, ikon
+   (`favicon*.{ico,png}`, `apple-touch-icon.png`), dan OG (`og.*`) →
    Edge + Browser TTL **1 year** (ekspresi siap-tempel ada di tutorial).
 
 Langkah 5 juga bisa lewat script idempoten:
@@ -107,9 +108,9 @@ Langkah 5 juga bisa lewat script idempoten:
 CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ZONE=minilabs.id bun cloudflare/setup.ts
 ```
 
-Aset (`app.js`, `logo.svg`, font) diberi query `?v=<hash isi>` oleh build, jadi
-aman di-cache setahun: perubahan berkas otomatis menghasilkan URL baru. HTML
-tidak diberi `?v=` dan tetap revalidasi.
+Aset (`app.js`, `logo.svg`, font, ikon, OG) diberi query `?v=<hash isi>` oleh
+build, jadi aman di-cache setahun: perubahan berkas otomatis menghasilkan URL
+baru. HTML tidak diberi `?v=` dan tetap revalidasi.
 
 ## Lisensi
 

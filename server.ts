@@ -62,6 +62,6 @@ const rebuild = () => {
 
 watch(root, { recursive: true }, (_event, name) => {
   if (!name) return
-  if (/^(site|\.docs-cache|node_modules|\.git)([\\/]|$)/.test(name)) return
+  if (/^(site|\.docs-cache|node_modules|\.git|\.minicode)([\\/]|$)/.test(name)) return
   rebuild()
 })

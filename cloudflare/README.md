@@ -104,10 +104,11 @@ kustom. Satu-satunya cara memperpanjang = **Cache Rules** di Cloudflare.
    - **If incoming requests match**: pilih **Custom filter expression**, lalu
      tempel (ganti *Edit expression*):
      ```
-     (starts_with(http.request.uri.path, "/fonts/")) or (http.request.uri.path eq "/app.js") or (http.request.uri.path eq "/logo.svg")
+     (starts_with(http.request.uri.path, "/fonts/")) or (http.request.uri.path eq "/app.js") or (http.request.uri.path eq "/logo.svg") or (http.request.uri.path eq "/favicon.ico") or (http.request.uri.path eq "/favicon-48x48.png") or (http.request.uri.path eq "/favicon-192x192.png") or (http.request.uri.path eq "/apple-touch-icon.png") or (http.request.uri.path matches "^/og\\.(png|jpe?g|webp)$")
      ```
-     *(Tampilan builder: URI Path `starts with` `/fonts/` **OR** URI Path
-     `equals` `/app.js` **OR** URI Path `equals` `/logo.svg`.)*
+     *(Builder: URI Path `starts with` `/fonts/` **OR** equals `/app.js`,
+     `/logo.svg`, `/favicon.ico`, `/favicon-48x48.png`, `/favicon-192x192.png`,
+     `/apple-touch-icon.png`, **OR** matches `^/og\.(png|jpe?g|webp)$`.)*
    - **Then**:
      | Setelan | Nilai |
      | :-- | :-- |
@@ -117,9 +118,9 @@ kustom. Satu-satunya cara memperpanjang = **Cache Rules** di Cloudflare.
 4. **Deploy rule**.
 
 > Kenapa aman 1 tahun? `build.ts` menambahkan `?v=<hash isi>` ke semua aset
-> (`/app.js?v=…`, `/logo.svg?v=…`, font `?v=…`). Isi berubah ⇒ URL berubah ⇒
-> cache lama otomatis tak terpakai. HTML tidak diberi `?v=` dan sengaja tidak
-> di-cache (Cloudflare default), jadi konten baru langsung terlihat.
+> (`/app.js?v=…`, `/logo.svg?v=…`, font, ikon, OG `?v=…`). Isi berubah ⇒ URL
+> berubah ⇒ cache lama otomatis tak terpakai. HTML tidak diberi `?v=` dan sengaja
+> tidak di-cache (Cloudflare default), jadi konten baru langsung terlihat.
 
 ### Alternatif script (opsional)
 

@@ -142,7 +142,10 @@ for (const file of htmlFiles(site)) {
   if (!html.includes('property="og:image:alt"')) fail(`${rel}: og:image:alt hilang`)
   if (!html.includes('name="twitter:image:alt"')) fail(`${rel}: twitter:image:alt hilang`)
   if (!html.includes(":focus-visible")) fail(`${rel}: CSS :focus-visible hilang`)
-  if (rel.includes("/docs/") && !html.includes('hreflang="id"')) fail(`${rel}: hreflang id hilang`)
+  if (rel.includes("/docs/")) {
+    const expectedLang = rel.startsWith("en/") ? "en" : "id"
+    if (!html.includes(`hreflang="${expectedLang}"`)) fail(`${rel}: hreflang ${expectedLang} hilang`)
+  }
   for (const m of html.matchAll(/<a\b[^>]*href="(https?:\/\/[^\"]+)"[^>]*>/g)) {
     if (!/rel="[^\"]*\bnoopener\b[^\"]*\bnoreferrer\b[^\"]*"/.test(m[0]!)) {
       fail(`${rel}: tautan eksternal tanpa rel noopener noreferrer: ${m[1]}`)
@@ -152,8 +155,9 @@ for (const file of htmlFiles(site)) {
     fail(`${rel}: halaman yang dapat diindeks harus menyatakan robots index,follow`)
   }
   if (rel.includes("404.html") && !html.includes('content="noindex,nofollow"')) fail(`${rel}: halaman 404 harus noindex,nofollow`)
-  if (!html.includes('href="/favicon.ico"')) fail(`${rel}: favicon.ico link hilang`)
-  if (!html.includes('href="/favicon-48x48.png"')) fail(`${rel}: PNG favicon link hilang`)
+  if (!/href="\/favicon\.ico(\?v=[^"]+)?"/.test(html)) fail(`${rel}: favicon.ico link (versioned) hilang`)
+  if (!/href="\/favicon-48x48\.png(\?v=[^"]+)?"/.test(html)) fail(`${rel}: PNG favicon link (versioned) hilang`)
+  if (!/href="\/apple-touch-icon\.png(\?v=[^"]+)?"/.test(html)) fail(`${rel}: apple-touch-icon link (versioned) hilang`)
   if (existsSync(join(site, "og.png")) || existsSync(join(site, "og.jpg")) || existsSync(join(site, "og.jpeg")) || existsSync(join(site, "og.webp"))) {
     if (rel !== "404.html" && !html.includes('property="og:image:width"')) fail(`${rel}: og:image:width hilang`)
     if (rel !== "404.html" && !html.includes('property="og:image:height"')) fail(`${rel}: og:image:height hilang`)

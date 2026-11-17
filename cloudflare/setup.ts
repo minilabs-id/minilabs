@@ -72,11 +72,15 @@ console.log(`[cdn] zona ${zone.name} (${zone.id}) status=${zone.status}`)
 // HTML dan berkas lain dibiarkan pada perilaku default (Cloudflare tidak
 // meng-cache HTML; GitHub Pages sudah punya cache 600 detik sendiri).
 const LONG = 31_536_000
-const DESCRIPTION = "MiniLabs: aset immutable (fonts, app.js, logo, og)"
+const DESCRIPTION = "MiniLabs: aset immutable (fonts, app.js, logo, icons, og)"
 const EXPRESSION =
   `(starts_with(http.request.uri.path, "/fonts/")) or ` +
   `(http.request.uri.path eq "/app.js") or ` +
   `(http.request.uri.path eq "/logo.svg") or ` +
+  `(http.request.uri.path eq "/favicon.ico") or ` +
+  `(http.request.uri.path eq "/favicon-48x48.png") or ` +
+  `(http.request.uri.path eq "/favicon-192x192.png") or ` +
+  `(http.request.uri.path eq "/apple-touch-icon.png") or ` +
   `(http.request.uri.path matches "^/og\\.(png|jpe?g|webp)$")`
 
 interface CacheRule {

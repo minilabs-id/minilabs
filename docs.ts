@@ -1,6 +1,6 @@
-// Dokumentasi proyek — render markdown `docs/**/*.md` dari repo proyek lain menjadi
-// halaman HTML di minilabs. Sumber docs = repo masing-masing (single source of
-// truth). Workflow deploy dijadwalkan + dispatch agar halaman ikut ter-update.
+// Dokumentasi proyek — render markdown `docs/**/*.md` dan `docs-en/**/*.md` dari
+// repo proyek lain menjadi halaman HTML di minilabs. Sumber docs = repo masing-masing
+// (single source of truth). Workflow deploy dijadwalkan + dispatch agar halaman ikut ter-update.
 //
 // Renderer ini sengaja minimal (zero-dependency) tetapi menutup celah yang dulu
 // ada: escape atribut, gambar, paragraf multi-baris, link relatif, subfolder,
@@ -8,6 +8,7 @@
 
 import { existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs"
 import { dirname, join, posix } from "node:path"
+import { type Lang } from "./copy.ts"
 
 const META = new Set(["readme.md", "summary.md"])
 
@@ -34,6 +35,8 @@ export interface DocLinkContext {
   dir: string
   /** Direktori sumber docs di repo (`docs` atau `docs-en`), untuk tautan keluar. */
   docsDir?: string
+  /** Bahasa halaman docs. */
+  lang?: Lang
 }
 
 const hasScheme = (u: string): boolean => /^[a-z][a-z0-9+.-]*:/i.test(u)
@@ -54,7 +57,15 @@ export function resolveDocLink(u: string, ctx: DocLinkContext): string {
   const [pathPart, hash] = splitHash(u)
   if (!pathPart) return u
 
+  const docsDir = ctx.docsDir ?? "docs"
+  const lang = ctx.lang ?? (docsDir === "docs-en" ? "en" : "id")
+  const langPrefix = lang === "en" ? "en/" : ""
   if (/\.md$/i.test(pathPart)) {
+    const baseName = pathPart.split("/").pop()?.toLowerCase() ?? ""
+    if (META.has(baseName)) {
+      const repoPath = posix.normalize(posix.join(docsDir, ctx.dir, pathPart))
+      return `https://github.com/${ctx.repo}/blob/HEAD/${repoPath}${hash}`
+    }
     // Tautan keluar dari akar docs yang dirender (mis. `../TERMINAL_CONTRACT.md`
     // dari `docs-en/`) bukan halaman di situs, jadi diarahkan ke berkas di repo
     // alih-alih membangun URL halaman yang pasti 404. Kedalaman `..` dihitung
@@ -63,23 +74,17 @@ export function resolveDocLink(u: string, ctx: DocLinkContext): string {
     const depth = ctx.dir === "" ? 0 : ctx.dir.split("/").length
     const up = pathPart.split("/").filter((seg) => seg === "..").length
     if (up > depth) {
-      // Target di atas akar docs: berkas itu tidak dirender sebagai halaman,
-      // jadi arahkan ke lokasinya di repo. Direktori sumber (`docs`/`docs-en`)
-      // tetap dipakai supaya `../X.md` menunjuk `docs/X.md`, bukan root repo.
-      // `node:path.join` sudah menormalkan `..`, jadi `docs-en/../X.md` menjadi
-      // `X.md` tanpa sisa — tidak perlu menggabung path secara manual.
-      // Berkas di atas direktori sumber hanya ada di `docs/` (spesifikasi
-      // internal FROZEN tidak diterjemahkan), jadi targetnya selalu `docs/<name>`.
-      const name = pathPart.split("/").filter((seg) => seg !== "..").join("/")
-      return `https://github.com/${ctx.repo}/blob/HEAD/docs/${name}${hash}`
+      // Target di atas akar docs bukan halaman yang dirender; tautkan ke repo.
+      const repoPath = posix.normalize(posix.join(docsDir, ctx.dir, pathPart))
+      return `https://github.com/${ctx.repo}/blob/HEAD/${repoPath}${hash}`
     }
     const base = posix
       .normalize(posix.join(ctx.dir, pathPart.replace(/\.md$/i, "")))
       .replace(/^\.\//, "")
-    return `/projects/${ctx.slug}/docs/${base}/${hash}`
+    return `/${langPrefix}projects/${ctx.slug}/docs/${base}/${hash}`
   }
 
-  const repoPath = posix.normalize(posix.join("docs", ctx.dir, pathPart))
+  const repoPath = posix.normalize(posix.join(docsDir, ctx.dir, pathPart))
   return `https://github.com/${ctx.repo}/raw/HEAD/${repoPath}${hash}`
 }
 
@@ -272,6 +277,9 @@ function collectDocFiles(dir: string, prefix: string, acc: string[]): void {
   }
 }
 
+const strictDocs = process.env.DOCS_STRICT === "1"
+const pulledThisRun = new Set<string>()
+
 function pull(cloneDir: string, repo: string): boolean {
   const res = Bun.spawnSync(["git", "-C", cloneDir, "pull", "--quiet"], {
     stderr: "pipe",
@@ -279,22 +287,16 @@ function pull(cloneDir: string, repo: string): boolean {
   })
   if (res.exitCode !== 0) {
     const detail = res.stderr?.toString().trim() || `exit ${res.exitCode}`
-    console.warn(`[docs] git pull gagal untuk ${repo}; memakai cache apa adanya (${detail})`)
+    const msg = `[docs] git pull gagal untuk ${repo}; memakai cache apa adanya (${detail})`
+    if (strictDocs) throw new Error(msg)
+    console.warn(msg)
   }
   return res.exitCode === 0
 }
 
-export async function fetchProjectDocs(opts: {
-  repo: string
-  slug: string
-  docsDir: string
-  cacheDir: string
-}): Promise<DocPage[]> {
-  const { repo, slug, docsDir, cacheDir } = opts
+/** Pastikan repo terklon & segar (pull maksimal sekali per proses/run). */
+function ensureRepo(repo: string, cacheDir: string): string {
   const cloneDir = join(cacheDir, repo.replace("/", "--"))
-  const docsPath = join(cloneDir, docsDir)
-
-  // Klon/fetch dangkal repo (bila jaringan tak ada, pakai cache/kosong).
   if (!existsSync(join(cloneDir, ".git"))) {
     mkdirSync(cacheDir, { recursive: true })
     const res = Bun.spawnSync(
@@ -303,13 +305,36 @@ export async function fetchProjectDocs(opts: {
     )
     if (res.exitCode !== 0) {
       const detail = res.stderr?.toString().trim() || `exit ${res.exitCode}`
-      console.warn(`[docs] git clone gagal untuk ${repo}; docs dilewati (${detail})`)
-      return []
+      const msg = `[docs] git clone gagal untuk ${repo}; docs dilewati (${detail})`
+      if (strictDocs) throw new Error(msg)
+      console.warn(msg)
+      return cloneDir
     }
-  } else {
-    pull(cloneDir, repo)
+    pulledThisRun.add(repo)
+    return cloneDir
   }
+  if (!pulledThisRun.has(repo)) {
+    pull(cloneDir, repo)
+    pulledThisRun.add(repo)
+  }
+  return cloneDir
+}
 
+export async function fetchProjectDocs(opts: {
+  repo: string
+  slug: string
+  docsDir: string
+  cacheDir: string
+  lang?: Lang
+}): Promise<DocPage[]> {
+  const { repo, slug, docsDir, cacheDir } = opts
+  const lang = opts.lang ?? (docsDir === "docs-en" ? "en" : "id")
+  const cloneDir = ensureRepo(repo, cacheDir)
+  const docsPath = join(cloneDir, docsDir)
+
+  if (!existsSync(join(cloneDir, ".git"))) {
+    return []
+  }
   if (!existsSync(docsPath)) {
     console.warn(`[docs] ${repo} tidak punya direktori ${docsDir}/; docs dilewati`)
     return []
@@ -332,7 +357,7 @@ export async function fetchProjectDocs(opts: {
     const title = titleLine ? titleLine[1]!.replace(/[`*]/g, "").trim() : name
     const body = titleLine ? raw.replace(/^#\s+.*(?:\r?\n)?/m, "") : raw
 
-    pages.push({ name, title, html: mdToHtml(body, { slug, repo, dir, docsDir }) })
+    pages.push({ name, title, html: mdToHtml(body, { slug, repo, dir, docsDir, lang }) })
   }
   return pages
 }

@@ -1,7 +1,6 @@
 // MiniLabs — SSG minim: hub + halaman detail proyek + dokumen, bilingual (id/en).
 // Zero-dependency (node:fs/path). Baca projects.ts + copy.ts → generate site/.
-// Konten proyek (docs) = single source bahasa sumber (Indonesia), dirender sekali
-// di namespace id; chrome situs (hub + halaman proyek) dibuat untuk id dan en.
+// Dokumentasi dirender dari `docs/` (id) dan `docs-en/` (en) bila tersedia.
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { createHash } from "node:crypto"
 import { dirname, join } from "node:path"
@@ -33,13 +32,15 @@ const assetUrl = (rel: string): string => `/${rel}?v=${version(rel)}`
 const fontUrl = (file: string): string => assetUrl(`fonts/${file}`)
 const appJsUrl = assetUrl("app.js")
 const logoUrl = assetUrl("logo.svg")
+const iconIcoUrl = assetUrl("favicon.ico")
+const icon48Url = assetUrl("favicon-48x48.png")
+const appleTouchUrl = assetUrl("apple-touch-icon.png")
 // Dimensi intrinsik logo (dari viewBox) untuk atribut width/height pada <img>:
 // memberi rasio aspek yang benar sebelum gambar dimuat (mencegah CLS), dan tetap
 // sinkron otomatis bila logo.svg berubah.
 const logoSize = (() => {
-  const m = /viewBox="\s*-?[\d.]+ -?[\d.]+ ([\d.]+) ([\d.]+)"/.exec(
-    readFileSync(join(root, "logo.svg"), "utf8"),
-  )
+  const svg = readFileSync(join(root, "logo.svg"), "utf8")
+  const m = /viewBox\s*=\s*["']\s*-?[\d.eE+-]+[\s,]+-?[\d.eE+-]+[\s,]+([\d.eE+-]+)[\s,]+([\d.eE+-]+)/.exec(svg)
   if (!m) return null
   const w = Math.round(Number(m[1]))
   const h = Math.round(Number(m[2]))
@@ -137,10 +138,9 @@ function layout(opts: {
         (L) =>
           `<link rel="alternate" hreflang="${L.code}" href="${base}${href(L.code, rel)}" />`,
       ).join("\n") + `\n<link rel="alternate" hreflang="x-default" href="${base}${href("id", rel)}" />`
-    : // Halaman docs hanya ada di bahasa sumber (id). Tanpa sinyal hreflang,
-      // Google bisa menganggapnya duplikat chrome locale; nyatakan eksplisit.
+    : // Dokumen hanya ada di bahasa sumber yang benar-benar dirender.
       rel.includes("/docs/")
-      ? `<link rel="alternate" hreflang="id" href="${canon}" />\n<link rel="alternate" hreflang="x-default" href="${canon}" />`
+      ? `<link rel="alternate" hreflang="${lang}" href="${canon}" />\n<link rel="alternate" hreflang="x-default" href="${canon}" />`
       : ""
   const htmlLang = LANGS.find((L) => L.code === lang)?.htmlLang ?? "id"
   const t = CHROME[lang]
@@ -194,9 +194,9 @@ function layout(opts: {
   <meta name="twitter:image" content="${ogImage}" />
   <meta name="twitter:image:alt" content="${escAttr(t.ogImageAlt)}" />
 <meta name="theme-color" content="#f6f5f0" />
-<link rel="icon" href="/favicon.ico" sizes="any" />
-<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<link rel="icon" href="${iconIcoUrl}" sizes="any" />
+<link rel="icon" type="image/png" sizes="48x48" href="${icon48Url}" />
+<link rel="apple-touch-icon" sizes="180x180" href="${appleTouchUrl}" />
 <link rel="preload" href="${fontUrl("space-grotesk-var.woff2")}" as="font" type="font/woff2" crossorigin />
 <link rel="preload" href="${fontUrl("ibm-plex-mono-500.woff2")}" as="font" type="font/woff2" crossorigin />
 <style>${stylesCss}</style>
@@ -331,11 +331,13 @@ const DOC_SOURCES: Array<{ lang: Lang; docsDir: string }> = [
 ]
 /** `slug -> bahasa yang punya docs`. */
 const DOCS_AVAILABLE = new Map<string, Partial<Record<Lang, boolean>>>()
+/** Hasil fetch dipakai kembali saat render agar tidak melakukan git pull dua kali. */
+const DOC_PAGES = new Map<string, Partial<Record<Lang, DocPage[]>>>()
 const DOC_CACHE_DIR = join(root, ".docs-cache")
 
 // ── Hub + halaman detail (id + en) ──────────────────────────────────────
 const liveCount = PROJECTS.filter((p) => p.status === "live").length
-const plannedCount = PROJECTS.length - liveCount
+const plannedCount = PROJECTS.filter((p) => p.status === "planned").length
 const featured = PROJECTS.find((p) => p.status === "live" && p.repo) ?? PROJECTS[0]!
 
 // ── Klon cache docs (sebelum render, agar tautan sudah pasti) ───────────
@@ -345,16 +347,20 @@ const featured = PROJECTS.find((p) => p.status === "live" && p.repo) ?? PROJECTS
 for (const p of PROJECTS) {
   if (!p.repo) continue
   const availability: Partial<Record<Lang, boolean>> = {}
+  const pagesByLang: Partial<Record<Lang, DocPage[]>> = {}
   for (const src of DOC_SOURCES) {
     const pages = await fetchProjectDocs({
       repo: p.repo,
       slug: p.slug,
       docsDir: src.docsDir,
       cacheDir: DOC_CACHE_DIR,
+      lang: src.lang,
     })
     availability[src.lang] = pages.length > 0
+    pagesByLang[src.lang] = pages
   }
   DOCS_AVAILABLE.set(p.slug, availability)
+  DOC_PAGES.set(p.slug, pagesByLang)
 }
 
 // ── Hub + halaman detail (id + en) ──────────────────────────────────────
@@ -460,15 +466,9 @@ for (const L of LANGS) {
 // ── Dokumentasi per proyek, per bahasa ──────────────────────────────────
 for (const p of PROJECTS) {
   if (!p.repo) continue
-  const docsAvailable = DOCS_AVAILABLE.get(p.slug) ?? {}
+  const pagesByLang = DOC_PAGES.get(p.slug) ?? {}
   for (const src of DOC_SOURCES) {
-    const pages = await fetchProjectDocs({
-      repo: p.repo,
-      slug: p.slug,
-      docsDir: src.docsDir,
-      cacheDir: DOC_CACHE_DIR,
-    })
-    docsAvailable[src.lang] = pages.length > 0
+    const pages = pagesByLang[src.lang] ?? []
     if (pages.length === 0) continue
 
     const lang = src.lang
@@ -476,6 +476,7 @@ for (const p of PROJECTS) {
     // `docsRel` sudah memuat prefiks bahasa, jadi ditaruh langsung di `rel`
     // (tanpa `href()`, yang akan menambahkan prefiks itu untuk kedua kalinya).
     const docsRel = `${prefix(lang)}projects/${p.slug}/docs/`
+    const docsPath = `projects/${p.slug}/docs/`
     const docsIndexBody = `
     <article class="project project--docs">
       <a class="back" href="${homeUrl(lang)}">${esc(t.backToLabs)}</a>
@@ -486,12 +487,13 @@ for (const p of PROJECTS) {
     </article>`
     write(
       `${docsRel}index.html`,
-      layout({ lang, rel: docsRel, title: `${p.name} — ${t.docsIndexTitle}`, desc: `${t.docsIndexTitle} ${p.name}.`, body: docsIndexBody }),
+      layout({ lang, rel: docsPath, title: `${p.name} — ${t.docsIndexTitle}`, desc: `${t.docsIndexTitle} ${p.name}.`, body: docsIndexBody }),
     )
     urls.push(`${base}/${docsRel}`)
 
     for (const d of pages) {
       const rel = `${docsRel}${d.name}/`
+      const docPath = `${docsPath}${d.name}/`
       const docBody = `
       <article class="project project--docs">
         <a class="back" href="/${docsRel}">${esc(t.docsBack)}</a>
@@ -500,7 +502,7 @@ for (const p of PROJECTS) {
       </article>`
       write(
         `${rel}index.html`,
-        layout({ lang, rel, title: `${d.title} — ${p.name}`, desc: `${t.docsIndexTitle} ${p.name}: ${d.title}.`, body: docBody }),
+        layout({ lang, rel: docPath, title: `${d.title} — ${p.name}`, desc: `${t.docsIndexTitle} ${p.name}: ${d.title}.`, body: docBody }),
       )
       urls.push(`${base}/${rel}`)
       docLinks.push(`- [${p.name}: ${d.title}](${base}/${rel})`)
